@@ -3,8 +3,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export function createClient() {
-  const cookieStore = cookies()
+type CookieMethods = Parameters<typeof createServerClient>[2]['cookies']
+type CookiesToSet = Parameters<NonNullable<CookieMethods>['setAll']>[0]
+
+export async function createClient() {
+  const cookieStore = await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,13 +17,13 @@ export function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: CookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
+            cookiesToSet.forEach((cookie: CookiesToSet[number]) =>
+              cookieStore.set(cookie.name, cookie.value, cookie.options),
             )
           } catch {
-            // setAll called from a Server Component — cookies are read-only
+            // setAll called from a Server Component - cookies are read-only
           }
         },
       },

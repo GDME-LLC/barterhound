@@ -1,6 +1,6 @@
 # BarterHound
 
-A **local-first barter marketplace** where users list items they're willing to trade, build bundled offers (multiple items + optional credits), and complete trades locally or via shipping.
+A local-first barter marketplace MVP scaffold.
 
 ---
 
@@ -8,61 +8,74 @@ A **local-first barter marketplace** where users list items they're willing to t
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 14 (App Router) |
+| Framework | Next.js 15 (App Router) |
 | Language | TypeScript |
 | Styling | Tailwind CSS |
-| Database / Auth / Storage | Supabase |
-| Map | Mapbox GL JS *(Phase 5)* |
+| Database / Auth / Storage | Supabase (planned integration) |
+| Map | Mapbox GL JS (Phase 5) |
+
+---
+
+## Phase 1 Scope
+
+This repo is intentionally limited to an MVP scaffold:
+
+- Core docs and phased roadmap are in place
+- Main app routes exist as placeholder pages
+- Supabase helper files and schema are included as planning/setup assets
+- Full business logic, polished UI, and advanced backend workflows are deferred to later phases
 
 ---
 
 ## Project Structure
 
-```
+```text
 barterhound/
-├── supabase/
-│   └── schema.sql          # Full Postgres schema — run in Supabase SQL editor
-├── src/
-│   ├── app/                # Next.js App Router pages
-│   │   ├── layout.tsx
-│   │   ├── page.tsx                      # Landing
-│   │   ├── (auth)/
-│   │   │   ├── login/page.tsx
-│   │   │   └── signup/page.tsx
-│   │   ├── dashboard/page.tsx
-│   │   ├── listings/
-│   │   │   ├── page.tsx                  # Browse feed
-│   │   │   ├── new/page.tsx              # Create listing
-│   │   │   └── [id]/
-│   │   │       ├── page.tsx              # Listing detail
-│   │   │       └── edit/page.tsx
-│   │   ├── map/page.tsx                  # Map browse (Mapbox)
-│   │   ├── offers/
-│   │   │   ├── page.tsx                  # Trade inbox
-│   │   │   └── new/page.tsx              # Offer builder
-│   │   ├── trades/
-│   │   │   └── [id]/shipment/page.tsx    # Shipment tracking
-│   │   └── profile/[id]/page.tsx
-│   ├── components/         # Reusable UI components (Phase 3+)
-│   ├── lib/
-│   │   └── supabase/
-│   │       ├── client.ts   # Browser-side Supabase client
-│   │       └── server.ts   # Server-side Supabase client
-│   └── types/
-│       └── index.ts        # Shared TypeScript domain types
-├── SPEC.md                 # Full product specification
-├── TASKS.md                # Phased development task list
-├── .env.example            # Required environment variables
-└── README.md               # This file
+|-- supabase/
+|   `-- schema.sql
+|-- src/
+|   |-- app/
+|   |   |-- layout.tsx
+|   |   |-- page.tsx
+|   |   |-- (auth)/
+|   |   |   |-- login/page.tsx
+|   |   |   `-- signup/page.tsx
+|   |   |-- dashboard/page.tsx
+|   |   |-- listings/
+|   |   |   |-- page.tsx
+|   |   |   |-- new/page.tsx
+|   |   |   `-- [id]/
+|   |   |       |-- page.tsx
+|   |   |       `-- edit/page.tsx
+|   |   |-- map/page.tsx
+|   |   |-- offers/
+|   |   |   |-- page.tsx
+|   |   |   `-- new/page.tsx
+|   |   |-- trades/
+|   |   |   `-- [id]/shipment/page.tsx
+|   |   `-- profile/[id]/page.tsx
+|   |-- components/
+|   |-- lib/
+|   |   `-- supabase/
+|   |       |-- client.ts
+|   |       `-- server.ts
+|   `-- types/
+|       `-- index.ts
+|-- SPEC.md
+|-- TASKS.md
+|-- .env.example
+`-- README.md
 ```
 
 ---
 
-## Database Schema
+## Planning Assets
 
-See [`supabase/schema.sql`](./supabase/schema.sql) for the full schema.
+See [`supabase/schema.sql`](./supabase/schema.sql) for the draft schema and [`src/types/index.ts`](./src/types/index.ts) for matching domain types.
 
-Core tables:
+These are included so later phases have a stable target model, but they are not fully wired into the app yet.
+
+Planned core tables:
 
 | Table | Purpose |
 |---|---|
@@ -72,10 +85,10 @@ Core tables:
 | `offers` | A trade proposal from one user to another |
 | `offer_items` | Individual items bundled in an offer |
 | `trades` | An accepted offer converted to a trade |
-| `shipments` | Shipping/tracking per trade direction |
+| `shipments` | Shipping and tracking per trade direction |
 | `reviews` | Post-trade ratings and comments |
-| `credit_ledger` | Platform credit accounting |
-| `equity_ledger` | Equity earned from value-asymmetric trades |
+| `credit_ledger` | Planned platform credit accounting |
+| `equity_ledger` | Planned equity tracking for value-asymmetric trades |
 
 ---
 
@@ -83,11 +96,11 @@ Core tables:
 
 ### 1. Prerequisites
 
-- Node.js ≥ 18
+- Node.js 18+
 - A free [Supabase](https://supabase.com) project
-- A free [Mapbox](https://mapbox.com) account *(for Phase 5)*
+- A free [Mapbox](https://mapbox.com) account for Phase 5
 
-### 2. Clone & install
+### 2. Clone and install
 
 ```bash
 git clone https://github.com/GDME-LLC/barterhound.git
@@ -103,16 +116,18 @@ cp .env.example .env.local
 
 Fill in the values:
 
-```
+```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_MAPBOX_TOKEN=pk.your-mapbox-token
 ```
 
-### 4. Run the database schema
+### 4. Optional Phase 2 setup
+
+If you want to start the backend setup in Phase 2:
 
 1. Open the Supabase dashboard for your project.
-2. Go to **SQL Editor** → **New Query**.
+2. Go to **SQL Editor** -> **New Query**.
 3. Paste the contents of `supabase/schema.sql` and click **Run**.
 
 ### 5. Start the dev server
@@ -138,11 +153,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Architecture Notes
 
-- **App Router only** — no `pages/` directory.
-- **Server Components by default** — client components opt in via `'use client'`.
-- **Supabase SSR** — uses `@supabase/ssr` for cookie-based auth in both Server and Client Components.
-- **RLS enforced** — Row-Level Security policies are defined in `schema.sql`. All business authorization lives in the database, not just in API routes.
-- **Equity ≠ Credits** — Credits are a platform currency; equity is a separate ledger that tracks when a user gave up more market value than they received, providing a reputation signal over time.
+- App Router only; no `pages/` directory
+- Server Components by default
+- Supabase files are scaffold-level helpers; integration work begins in later phases
+- Schema and RLS are planning artifacts for now, not completed backend implementation
+- Equity and credits are planned concepts; no ledger business logic is implemented yet
 
 ---
 
@@ -152,13 +167,13 @@ See [`TASKS.md`](./TASKS.md) for the full breakdown.
 
 | Phase | Description |
 |---|---|
-| 1 | ✅ Project scaffold, schema, docs |
+| 1 | Completed: project scaffold, docs, route placeholders, planning assets |
 | 2 | Supabase project setup, storage buckets, RLS hardening |
 | 3 | Auth (sign up / sign in / sign out), profile creation |
 | 4 | Listings CRUD + image upload |
 | 5 | Browse feed + Mapbox map view |
 | 6 | Offer builder + trade inbox |
 | 7 | Trade completion, reviews, reliability scoring |
-| 8 | Credits & equity ledger |
+| 8 | Credits and equity ledger |
 | 9 | Shipment tracking workflow |
 | 10 | Seed data, UX polish, production deployment |
