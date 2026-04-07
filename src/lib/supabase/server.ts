@@ -2,16 +2,21 @@
 // Full implementation in Phase 3
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { hasSupabaseBrowserEnv, supabaseConfig } from '@/lib/supabase/config'
 
 type CookieMethods = Parameters<typeof createServerClient>[2]['cookies']
 type CookiesToSet = Parameters<NonNullable<CookieMethods>['setAll']>[0]
 
 export async function createClient() {
+  if (!hasSupabaseBrowserEnv()) {
+    return null
+  }
+
   const cookieStore = await cookies()
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseConfig.publicUrl!,
+    supabaseConfig.publicAnonKey!,
     {
       cookies: {
         getAll() {

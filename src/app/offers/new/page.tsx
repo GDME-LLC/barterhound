@@ -1,9 +1,36 @@
-// Offer builder — placeholder for Phase 6
-export default function NewOfferPage() {
+import { redirect } from 'next/navigation'
+import { OfferForm } from '@/components/offer-form'
+import { requireProfile } from '@/lib/auth'
+
+export default async function NewOfferPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ listing?: string; parent?: string }>
+}) {
+  const { listing: listingId, parent } = await searchParams
+  const { supabase, user } = await requireProfile()
+
+  if (!listingId) {
+    redirect('/listings')
+  }
+
+  const [{ data: listing }, { data: ownedListings }] = await Promise.all([
+    supabase.from('listings').select('*').eq('id', listingId).maybeSingle(),
+    supabase
+      .from('listings')
+      .select('id, title, category, estimated_value, status')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false }),
+  ])
+
+  if (!listing) {
+    redirect('/listings')
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <h1 className="text-2xl font-semibold">Build an Offer</h1>
-      <p className="mt-2 text-gray-500">Offer builder — Phase 6</p>
+    <main>
+      <OfferForm listing={listing} ownedListings={ownedListings ?? []} parentOfferId={parent} />
     </main>
   )
 }

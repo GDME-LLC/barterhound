@@ -1,9 +1,143 @@
-// Dashboard — placeholder for Phase 3
-export default function DashboardPage() {
+import Link from 'next/link'
+import { ProfileForm } from '@/components/profile-form'
+import { SupabaseWarning } from '@/components/supabase-warning'
+import { requireUser } from '@/lib/auth'
+import { formatCurrency, formatPercent } from '@/lib/format'
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ message?: string }>
+}) {
+  const { message } = await searchParams
+  const { supabase, user, profile, isConfigured } = await requireUser()
+
+  if (!isConfigured || !supabase) {
+    return (
+      <main className="space-y-6">
+        <h1 className="text-3xl font-semibold">Dashboard</h1>
+        <SupabaseWarning />
+      </main>
+    )
+  }
+
+  const [
+    { data: listings },
+    { data: incomingOffers },
+    { data: creditRows },
+    { data: trades },
+    { data: equityRows },
+  ] = await Promise.all([
+    supabase.from('listings').select('id, status').eq('user_id', user.id),
+    supabase.from('offers').select('id').eq('to_user_id', user.id),
+    supabase.from('credit_ledger').select('amount').eq('user_id', user.id),
+    supabase.from('trades').select('status').or(`initiator_id.eq.${user.id},receiver_id.eq.${user.id}`),
+    supabase.from('equity_ledger').select('amount').eq('user_id', user.id),
+  ])
+
+  const creditBalance = (creditRows ?? []).reduce((sum, row) => sum + row.amount, 0)
+  const lifetimeEquity = (equityRows ?? []).reduce((sum, row) => sum + row.amount, 0)
+  const completedTrades = (trades ?? []).filter((trade) => trade.status === 'completed').length
+  const cancelledTrades = (trades ?? []).filter((trade) => trade.status === 'cancelled').length
+  const disputedTrades = (trades ?? []).filter((trade) => trade.status === 'disputed').length
+  const resolvedTrades = (trades ?? []).filter((trade) =>
+    ['completed', 'cancelled', 'disputed'].includes(trade.status),
+  ).length
+  const completionRate = resolvedTrades > 0 ? (completedTrades / resolvedTrades) * 100 : 0
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <p className="mt-2 text-gray-500">User dashboard — Phase 3</p>
+    <main className="space-y-8">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-sm">
+        <p className="text-sm font-medium uppercase tracking-[0.2em] text-brand-600">
+          Authenticated workspace
+        </p>
+        <h1 className="mt-3 text-4xl font-semibold text-stone-900">
+          {profile?.display_name || profile?.username || user.email}
+        </h1>
+        <p className="mt-3 max-w-2xl text-stone-500">
+          Finish your public profile now, then move on to listings, offers, and
+          trades as later phases come online.
+        </p>
+        {message ? (
+          <p className="mt-4 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-brand-700">
+            {message}
+          </p>
+        ) : null}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-4">
+        <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-stone-500">Listings</p>
+          <p className="mt-2 text-3xl font-semibold">{listings?.length ?? 0}</p>
+        </article>
+        <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-stone-500">Incoming offers</p>
+          <p className="mt-2 text-3xl font-semibold">{incomingOffers?.length ?? 0}</p>
+        </article>
+        <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-stone-500">Credits</p>
+          <p className="mt-2 text-3xl font-semibold">{formatCurrency(creditBalance)}</p>
+        </article>
+        <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-stone-500">Completion rate</p>
+          <p className="mt-2 text-3xl font-semibold">{formatPercent(completionRate)}</p>
+        </article>
+        <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
+          <p className="text-sm text-stone-500">Lifetime equity</p>
+          <p className="mt-2 text-3xl font-semibold">{formatCurrency(lifetimeEquity)}</p>
+        </article>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-[1.35fr,0.9fr]">
+        <ProfileForm profile={profile} />
+
+        <aside className="space-y-4">
+          <section className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold">Quick links</h2>
+            <div className="mt-4 flex flex-col gap-3 text-sm">
+              <Link href="/listings/new" className="rounded-2xl border border-stone-200 px-4 py-3 transition hover:border-brand-300 hover:text-brand-700">
+                Create a listing
+              </Link>
+              <Link href="/offers" className="rounded-2xl border border-stone-200 px-4 py-3 transition hover:border-brand-300 hover:text-brand-700">
+                Review offers
+              </Link>
+              <Link href={`/profile/${user.id}`} className="rounded-2xl border border-stone-200 px-4 py-3 transition hover:border-brand-300 hover:text-brand-700">
+                View public profile
+              </Link>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold">Current profile state</h2>
+            <dl className="mt-4 space-y-3 text-sm text-stone-600">
+              <div className="flex items-center justify-between gap-4">
+                <dt>Email</dt>
+                <dd className="font-medium text-stone-900">{user.email}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <dt>Location</dt>
+                <dd className="font-medium text-stone-900">
+                  {profile?.location_label ?? 'Not set yet'}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <dt>Trade radius</dt>
+                <dd className="font-medium text-stone-900">
+                  {profile?.trade_radius_km ?? 50} km
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <dt>Cancelled trades</dt>
+                <dd className="font-medium text-stone-900">{cancelledTrades}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <dt>Disputed trades</dt>
+                <dd className="font-medium text-stone-900">{disputedTrades}</dd>
+              </div>
+            </dl>
+          </section>
+        </aside>
+      </section>
     </main>
   )
 }

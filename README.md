@@ -1,179 +1,110 @@
 # BarterHound
 
-A local-first barter marketplace MVP scaffold.
+BarterHound is a local-first barter marketplace MVP built with Next.js 15 and Supabase.
 
----
+The app now supports:
 
-## Tech Stack
+- email/password auth plus Google OAuth
+- profile onboarding and public profiles
+- listing create/edit/remove flows with image uploads
+- browse feed and Mapbox-based map browsing
+- offer creation with threaded counters and optional credits
+- trade status changes, shipment tracking, reviews, and reliability metrics
+- explicit credit and equity ledger writes
+- demo seeding for local environments with a configured Supabase project
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS |
-| Database / Auth / Storage | Supabase (planned integration) |
-| Map | Mapbox GL JS (Phase 5) |
+## Stack
 
----
-
-## Phase 1 Scope
-
-This repo is intentionally limited to an MVP scaffold:
-
-- Core docs and phased roadmap are in place
-- Main app routes exist as placeholder pages
-- Supabase helper files and schema are included as planning/setup assets
-- Full business logic, polished UI, and advanced backend workflows are deferred to later phases
-
----
+- Next.js 15 App Router
+- TypeScript
+- Tailwind CSS
+- Supabase Auth, Postgres, and Storage
+- Mapbox GL JS
 
 ## Project Structure
 
 ```text
 barterhound/
+|-- scripts/
+|   `-- seed-demo.mjs
 |-- supabase/
+|   |-- migrations/
+|   |   `-- 20260406193000_init_mvp.sql
 |   `-- schema.sql
 |-- src/
 |   |-- app/
-|   |   |-- layout.tsx
-|   |   |-- page.tsx
-|   |   |-- (auth)/
-|   |   |   |-- login/page.tsx
-|   |   |   `-- signup/page.tsx
-|   |   |-- dashboard/page.tsx
-|   |   |-- listings/
-|   |   |   |-- page.tsx
-|   |   |   |-- new/page.tsx
-|   |   |   `-- [id]/
-|   |   |       |-- page.tsx
-|   |   |       `-- edit/page.tsx
-|   |   |-- map/page.tsx
-|   |   |-- offers/
-|   |   |   |-- page.tsx
-|   |   |   `-- new/page.tsx
-|   |   |-- trades/
-|   |   |   `-- [id]/shipment/page.tsx
-|   |   `-- profile/[id]/page.tsx
 |   |-- components/
 |   |-- lib/
-|   |   `-- supabase/
-|   |       |-- client.ts
-|   |       `-- server.ts
 |   `-- types/
-|       `-- index.ts
-|-- SPEC.md
-|-- TASKS.md
 |-- .env.example
-`-- README.md
+|-- README.md
+|-- SPEC.md
+`-- TASKS.md
 ```
 
----
+## Environment
 
-## Planning Assets
-
-See [`supabase/schema.sql`](./supabase/schema.sql) for the draft schema and [`src/types/index.ts`](./src/types/index.ts) for matching domain types.
-
-These are included so later phases have a stable target model, but they are not fully wired into the app yet.
-
-Planned core tables:
-
-| Table | Purpose |
-|---|---|
-| `profiles` | Public user data (extends `auth.users`) |
-| `listings` | Items listed for trade |
-| `listing_images` | Images attached to a listing |
-| `offers` | A trade proposal from one user to another |
-| `offer_items` | Individual items bundled in an offer |
-| `trades` | An accepted offer converted to a trade |
-| `shipments` | Shipping and tracking per trade direction |
-| `reviews` | Post-trade ratings and comments |
-| `credit_ledger` | Planned platform credit accounting |
-| `equity_ledger` | Planned equity tracking for value-asymmetric trades |
-
----
-
-## Local Development Setup
-
-### 1. Prerequisites
-
-- Node.js 18+
-- A free [Supabase](https://supabase.com) project
-- A free [Mapbox](https://mapbox.com) account for Phase 5
-
-### 2. Clone and install
-
-```bash
-git clone https://github.com/GDME-LLC/barterhound.git
-cd barterhound
-npm install
-```
-
-### 3. Environment variables
-
-```bash
-cp .env.example .env.local
-```
-
-Fill in the values:
+Copy `.env.example` to `.env.local` and fill in:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_MAPBOX_TOKEN=pk.your-mapbox-token
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### 4. Optional Phase 2 setup
+Supabase setup required for the full app:
 
-If you want to start the backend setup in Phase 2:
+1. Apply `supabase/migrations/20260406193000_init_mvp.sql`.
+2. Create public buckets named `listing-images` and `avatars`.
+3. Add `http://localhost:3000/auth/callback` to Supabase redirect URLs.
+4. Enable Google OAuth in Supabase if you want social sign-in.
 
-1. Open the Supabase dashboard for your project.
-2. Go to **SQL Editor** -> **New Query**.
-3. Paste the contents of `supabase/schema.sql` and click **Run**.
-
-### 5. Start the dev server
+## Local Development
 
 ```bash
+npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Useful commands:
 
----
+```bash
+npm run typecheck
+npm run lint
+npm run build
+npm run seed:demo
+```
 
-## Available Scripts
+`npm run seed:demo` requires a working `.env.local` with service-role access. It creates demo auth users, profiles, listings, offers, a completed shipped trade, reviews, and ledger entries.
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start local dev server |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
+Demo user passwords created by the seed script:
 
----
+- `alice.demo@barterhound.local` / `BarterHound123!`
+- `marco.demo@barterhound.local` / `BarterHound123!`
+- `riley.demo@barterhound.local` / `BarterHound123!`
 
-## Architecture Notes
+## MVP Behavior Notes
 
-- App Router only; no `pages/` directory
-- Server Components by default
-- Supabase files are scaffold-level helpers; integration work begins in later phases
-- Schema and RLS are planning artifacts for now, not completed backend implementation
-- Equity and credits are planned concepts; no ledger business logic is implemented yet
+- Listing locations are approximate city-level coordinates for browsing and map display.
+- Credits and equity are separate append-only ledgers.
+- Credit balance is checked when an offer is created, debited on acceptance, and refunded on cancelled/disputed trades.
+- Equity is written only when a trade completes. The current first-pass rule compares the accepted listing value against the offered listings plus credits and mirrors the resulting delta across both participants.
+- Shipment tracking is manual for MVP; there is no carrier API integration yet.
 
----
+## Verification
 
-## Phased Roadmap
+The repo is set up to verify with:
 
-See [`TASKS.md`](./TASKS.md) for the full breakdown.
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
 
-| Phase | Description |
-|---|---|
-| 1 | Completed: project scaffold, docs, route placeholders, planning assets |
-| 2 | Supabase project setup, storage buckets, RLS hardening |
-| 3 | Auth (sign up / sign in / sign out), profile creation |
-| 4 | Listings CRUD + image upload |
-| 5 | Browse feed + Mapbox map view |
-| 6 | Offer builder + trade inbox |
-| 7 | Trade completion, reviews, reliability scoring |
-| 8 | Credits and equity ledger |
-| 9 | Shipment tracking workflow |
-| 10 | Seed data, UX polish, production deployment |
+## Remaining MVP Constraints
+
+- Running the full product still depends on a configured Supabase project and storage buckets.
+- Map browsing requires `NEXT_PUBLIC_MAPBOX_TOKEN`.
+- The current demo seed script targets hosted/local Supabase projects with admin credentials; it is not intended for production data.

@@ -1,9 +1,21 @@
-// Sign-up page — placeholder for Phase 3
-export default function SignUpPage() {
+import { AuthCard } from '@/components/auth-card'
+
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ message?: string }>
+}) {
+  const { message } = await searchParams
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <h1 className="text-2xl font-semibold">Create Account</h1>
-      <p className="mt-2 text-gray-500">Authentication — Phase 3</p>
-    </main>
+    <AuthCard
+      title="Create your account"
+      description="Use email/password or Google. After sign-in, finish your public profile."
+      action="/auth/signup"
+      submitLabel="Create account"
+      alternateHref="/login"
+      alternateLabel="Already have an account? Sign in."
+      message={message}
+    />
   )
 }
