@@ -10,7 +10,7 @@ export default async function SignUpPage({
   return (
     <AuthCard
       title="Create your account"
-      description="Use email/password or Google. After sign-in, finish your public profile."
+      description="Use email/password, Google, or Facebook. After sign-in, finish your public profile."
       action="/auth/signup"
       submitLabel="Create account"
       alternateHref="/login"

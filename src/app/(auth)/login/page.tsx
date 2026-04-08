@@ -10,7 +10,7 @@ export default async function LoginPage({
   return (
     <AuthCard
       title="Welcome back"
-      description="Sign in with email/password or continue with Google."
+      description="Sign in with email/password or continue with Google or Facebook."
       action="/auth/login"
       submitLabel="Sign in"
       alternateHref="/signup"
