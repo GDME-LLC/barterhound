@@ -39,16 +39,32 @@ export interface Listing {
   id: string
   user_id: string
   title: string
-  description: string
+  description: string | null
   category: string
   condition: ListingCondition
-  estimated_value: number // in USD cents
+  estimated_value: number | null // in USD cents
   trade_for: string | null // free-text preferences
   is_local: boolean
   is_shippable: boolean
   lat: number | null
   lng: number | null
   location_label: string | null
+  brand: string | null
+  model: string | null
+  quantity: number | null
+  is_bundle: boolean
+  desired_categories: string[] | null
+  open_to_anything: boolean
+  ai_normalized_title: string | null
+  ai_detected_brand: string | null
+  ai_detected_model: string | null
+  ai_estimated_low: number | null // in USD cents
+  ai_estimated_high: number | null // in USD cents
+  ai_confidence: 'low' | 'medium' | 'high' | null
+  ai_explanation: string | null
+  ai_valuation_fingerprint: string | null
+  user_selected_trade_value: number | null // in USD cents
+  is_verified_listing: boolean
   status: ListingStatus
   created_at: string
   updated_at: string

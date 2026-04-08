@@ -29,7 +29,8 @@ barterhound/
 |   `-- seed-demo.mjs
 |-- supabase/
 |   |-- migrations/
-|   |   `-- 20260406193000_init_mvp.sql
+|   |   |-- 20260406193000_init_mvp.sql
+|   |   `-- 20260408120000_listings_ai_fields.sql
 |   `-- schema.sql
 |-- src/
 |   |-- app/
@@ -52,14 +53,17 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_MAPBOX_TOKEN=pk.your-mapbox-token
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.0-flash
 ```
 
 Supabase setup required for the full app:
 
 1. Apply `supabase/migrations/20260406193000_init_mvp.sql`.
-2. Create public buckets named `listing-images` and `avatars`.
-3. Add `http://localhost:3000/auth/callback` to Supabase redirect URLs.
-4. Enable Google OAuth in Supabase if you want social sign-in.
+2. Apply `supabase/migrations/20260408120000_listings_ai_fields.sql`.
+3. Create public buckets named `listing-images` and `avatars`.
+4. Add `http://localhost:3000/auth/callback` to Supabase redirect URLs.
+5. Enable Google OAuth in Supabase if you want social sign-in.
 
 ## Local Development
 

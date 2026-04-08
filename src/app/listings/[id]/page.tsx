@@ -50,6 +50,7 @@ export default async function ListingDetailPage({
     .eq('id', listing.user_id)
     .maybeSingle()
   const isOwner = user?.id === listing.user_id
+  const tradeValue = listing.user_selected_trade_value ?? listing.estimated_value
 
   return (
     <main className="space-y-6">
@@ -82,13 +83,13 @@ export default async function ListingDetailPage({
           <h1 className="mt-3 text-4xl font-semibold text-stone-900">
             {listing.title}
           </h1>
-          <p className="mt-4 text-stone-500">{listing.description}</p>
+          <p className="mt-4 text-stone-500">{listing.description || 'No description yet.'}</p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-stone-100 px-4 py-3">
-              <p className="text-sm text-stone-500">Estimated value</p>
+              <p className="text-sm text-stone-500">Trade value</p>
               <p className="mt-1 text-xl font-semibold text-stone-900">
-                {formatCurrency(listing.estimated_value)}
+                {formatCurrency(tradeValue)}
               </p>
             </div>
             <div className="rounded-2xl bg-stone-100 px-4 py-3">

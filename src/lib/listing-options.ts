@@ -16,5 +16,5 @@ export const listingConditions = [
   { value: 'like_new', label: 'Like new' },
   { value: 'good', label: 'Good' },
   { value: 'fair', label: 'Fair' },
-  { value: 'poor', label: 'Poor' },
+  { value: 'poor', label: 'Parts / Repair' },
 ] as const

@@ -11,12 +11,14 @@
     "seed:demo": "node scripts/seed-demo.mjs"
   },
   "dependencies": {
+    "@google/genai": "^1.48.0",
     "@supabase/ssr": "^0.5",
     "@supabase/supabase-js": "^2",
     "mapbox-gl": "^3.21.0",
     "next": "^15.2.8",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -35,10 +35,10 @@ export function ListingCard({
             {listing.condition.replace('_', ' ')}
           </span>
         </div>
-        <p className="line-clamp-3 text-sm text-stone-500">{listing.description}</p>
+        <p className="line-clamp-3 text-sm text-stone-500">{listing.description ?? ''}</p>
         <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
           <span>{formatCurrency(listing.estimated_value)}</span>
-          <span>•</span>
+          <span>-</span>
           <span>{listing.location_label || 'Location pending'}</span>
         </div>
         <div className="flex items-center justify-between gap-4">

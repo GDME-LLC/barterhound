@@ -99,20 +99,44 @@ create table if not exists public.listings (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   title text not null check (char_length(title) between 3 and 120),
-  description text not null check (char_length(description) between 10 and 4000),
+  description text check (description is null or char_length(description) between 10 and 4000),
   category text not null check (char_length(category) between 2 and 40),
   condition listing_condition not null,
-  estimated_value integer not null check (estimated_value > 0),
+  estimated_value integer check (estimated_value is null or estimated_value > 0),
   trade_for text,
   is_local boolean not null default true,
   is_shippable boolean not null default false,
   lat double precision,
   lng double precision,
   location_label text,
+  brand text,
+  model text,
+  quantity integer,
+  is_bundle boolean not null default false,
+  desired_categories text[],
+  open_to_anything boolean not null default false,
+  ai_normalized_title text,
+  ai_detected_brand text,
+  ai_detected_model text,
+  ai_estimated_low integer,
+  ai_estimated_high integer,
+  ai_confidence text,
+  ai_explanation text,
+  ai_valuation_fingerprint text,
+  user_selected_trade_value integer,
+  is_verified_listing boolean not null default false,
   status listing_status not null default 'active',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  check (is_local or is_shippable)
+  check (is_local or is_shippable),
+  check (quantity is null or quantity between 1 and 99),
+  check (ai_confidence is null or ai_confidence in ('low', 'medium', 'high')),
+  check (
+    ai_estimated_low is null
+    or ai_estimated_high is null
+    or (ai_estimated_low > 0 and ai_estimated_high > 0 and ai_estimated_low <= ai_estimated_high)
+  ),
+  check (user_selected_trade_value is null or user_selected_trade_value > 0)
 );
 
 create table if not exists public.listing_images (
