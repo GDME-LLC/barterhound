@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAppBaseUrl } from '@/lib/app-url'
 
-export async function POST(request: Request) {
+async function startGoogleOAuth(request: Request) {
   const requestUrl = new URL(request.url)
   const appUrl = getAppBaseUrl(requestUrl)
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
@@ -31,4 +31,12 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.redirect(data.url)
+}
+
+export async function GET(request: Request) {
+  return startGoogleOAuth(request)
+}
+
+export async function POST(request: Request) {
+  return startGoogleOAuth(request)
 }
