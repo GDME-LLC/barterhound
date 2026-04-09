@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { ensureProfileRecord } from '@/lib/profile'
+import { getAppBaseUrl } from '@/lib/app-url'
 
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url)
-  const origin = requestUrl.origin
+  const appUrl = getAppBaseUrl(requestUrl)
   const formData = await request.formData()
   const email = String(formData.get('email') ?? '').trim()
   const password = String(formData.get('password') ?? '').trim()
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
 
   if (!supabase) {
     return NextResponse.redirect(
-      new URL('/login?message=Supabase%20is%20not%20configured', origin),
+      new URL('/login?message=Supabase%20is%20not%20configured', appUrl),
     )
   }
 
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/login?message=${encodeURIComponent(error.message)}`, origin),
+      new URL(`/login?message=${encodeURIComponent(error.message)}`, appUrl),
     )
   }
 
@@ -33,5 +34,5 @@ export async function POST(request: Request) {
     await ensureProfileRecord({ supabase, user })
   }
 
-  return NextResponse.redirect(new URL(next, origin))
+  return NextResponse.redirect(new URL(next, appUrl))
 }

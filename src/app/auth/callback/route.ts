@@ -1,23 +1,24 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { ensureProfileRecord } from '@/lib/profile'
+import { getAppBaseUrl } from '@/lib/app-url'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
-  const origin = requestUrl.origin
+  const appUrl = getAppBaseUrl(requestUrl)
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
   const supabase = await createClient()
 
   if (!supabase || !code) {
-    return NextResponse.redirect(new URL('/login?message=Unable%20to%20complete%20sign-in', origin))
+    return NextResponse.redirect(new URL('/login?message=Unable%20to%20complete%20sign-in', appUrl))
   }
 
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/login?message=${encodeURIComponent(error.message)}`, origin),
+      new URL(`/login?message=${encodeURIComponent(error.message)}`, appUrl),
     )
   }
 
@@ -29,5 +30,5 @@ export async function GET(request: Request) {
     await ensureProfileRecord({ supabase, user })
   }
 
-  return NextResponse.redirect(new URL(next, origin))
+  return NextResponse.redirect(new URL(next, appUrl))
 }
