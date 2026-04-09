@@ -23,6 +23,9 @@ type ListingFormProps = {
 
 export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
   const router = useRouter()
+  const [selectedImagePreviews, setSelectedImagePreviews] = useState<
+    { url: string; name: string }[]
+  >([])
   const tradeValueRef = useRef<HTMLInputElement | null>(null)
   const aiNormalizedTitleRef = useRef<HTMLInputElement | null>(null)
   const aiDetectedBrandRef = useRef<HTMLInputElement | null>(null)
@@ -49,6 +52,12 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
       router.push(`/listings/${listingId}`)
     }
   }, [router, state])
+
+  useEffect(() => {
+    return () => {
+      selectedImagePreviews.forEach((preview) => URL.revokeObjectURL(preview.url))
+    }
+  }, [selectedImagePreviews])
 
   const suggestion = suggestState?.suggestion
 
@@ -116,6 +125,13 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
             accept="image/*"
             multiple
             required={mode === 'create'}
+            onChange={(event) => {
+              const files = Array.from(event.currentTarget.files ?? [])
+              setSelectedImagePreviews((current) => {
+                current.forEach((preview) => URL.revokeObjectURL(preview.url))
+                return files.map((file) => ({ url: URL.createObjectURL(file), name: file.name }))
+              })
+            }}
             className="w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3"
           />
           <span className="block text-xs font-normal text-stone-500">
@@ -341,7 +357,21 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
         </label>
       </section>
 
-      {images.length > 0 ? (
+      {selectedImagePreviews.length > 0 ? (
+        <div className="grid gap-3 md:grid-cols-4">
+          {selectedImagePreviews.map((preview) => (
+            <Image
+              key={preview.url}
+              src={preview.url}
+              alt={preview.name}
+              width={320}
+              height={320}
+              unoptimized
+              className="aspect-square w-full rounded-2xl object-cover"
+            />
+          ))}
+        </div>
+      ) : images.length > 0 ? (
         <div className="grid gap-3 md:grid-cols-4">
           {images.map((image) => (
             <Image

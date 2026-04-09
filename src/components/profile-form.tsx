@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
+import Image from 'next/image'
 import { saveProfileAction } from '@/app/dashboard/actions'
 import { FormMessage } from '@/components/form-message'
 import { FormSubmitButton } from '@/components/form-submit-button'
@@ -12,6 +13,15 @@ export function ProfileForm({
   profile: Profile | null
 }) {
   const [state, formAction] = useActionState(saveProfileAction, undefined)
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl)
+      }
+    }
+  }, [avatarPreviewUrl])
 
   return (
     <form action={formAction} className="space-y-5 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
@@ -64,11 +74,48 @@ export function ProfileForm({
 
         <label className="space-y-2 text-sm font-medium text-stone-700 md:col-span-2">
           Avatar
-          <input name="avatar" type="file" accept="image/*" className="w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3" />
+          <input
+            name="avatar"
+            type="file"
+            accept="image/*"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0]
+              setAvatarPreviewUrl((current) => {
+                if (current) URL.revokeObjectURL(current)
+                return file ? URL.createObjectURL(file) : null
+              })
+            }}
+            className="w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3"
+          />
         </label>
       </div>
 
       <input type="hidden" name="existing_avatar_url" value={profile?.avatar_url ?? ''} />
+
+      {avatarPreviewUrl ? (
+        <div className="rounded-3xl border border-stone-200 bg-stone-50 p-4">
+          <p className="text-sm font-medium text-stone-800">Selected avatar</p>
+          <Image
+            src={avatarPreviewUrl}
+            alt="Selected avatar preview"
+            width={96}
+            height={96}
+            unoptimized
+            className="mt-3 h-24 w-24 rounded-3xl object-cover"
+          />
+        </div>
+      ) : profile?.avatar_url ? (
+        <div className="rounded-3xl border border-stone-200 bg-stone-50 p-4">
+          <p className="text-sm font-medium text-stone-800">Current avatar</p>
+          <Image
+            src={profile.avatar_url}
+            alt={profile.username}
+            width={96}
+            height={96}
+            className="mt-3 h-24 w-24 rounded-3xl object-cover"
+          />
+        </div>
+      ) : null}
 
       <FormSubmitButton
         label="Save profile"
