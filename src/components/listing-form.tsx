@@ -5,15 +5,14 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
   createListingAction,
-  suggestListingValueAction,
   updateListingAction,
-  type SuggestValueState,
 } from '@/app/listings/actions'
 import { FormMessage } from '@/components/form-message'
 import { FormSubmitButton } from '@/components/form-submit-button'
 import { listingCategories, listingConditions } from '@/lib/listing-options'
 import { formatCurrency } from '@/lib/format'
 import type { Listing, ListingImage } from '@/types'
+import type { ListingValueSuggestion } from '@/lib/gemini/schema'
 
 type ListingFormProps = {
   mode: 'create' | 'edit'
@@ -23,6 +22,7 @@ type ListingFormProps = {
 
 export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
   const router = useRouter()
+  const formRef = useRef<HTMLFormElement | null>(null)
   const [selectedImagePreviews, setSelectedImagePreviews] = useState<
     { url: string; name: string }[]
   >([])
@@ -40,11 +40,12 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
     mode === 'create' ? createListingAction : updateListingAction,
     undefined,
   )
-  const [suggestState, suggestAction] = useActionState<SuggestValueState, FormData>(
-    suggestListingValueAction,
-    {},
-  )
+  const [suggestion, setSuggestion] = useState<ListingValueSuggestion | null>(null)
+  const [suggestFingerprint, setSuggestFingerprint] = useState<string | null>(null)
+  const [suggestError, setSuggestError] = useState<string | null>(null)
+  const [suggestLoading, setSuggestLoading] = useState(false)
   const [suggestNotice, setSuggestNotice] = useState<string | null>(null)
+  const [lastSuggestInputKey, setLastSuggestInputKey] = useState<string | null>(null)
 
   useEffect(() => {
     if (state?.success?.startsWith('Listing created:')) {
@@ -58,8 +59,6 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
       selectedImagePreviews.forEach((preview) => URL.revokeObjectURL(preview.url))
     }
   }, [selectedImagePreviews])
-
-  const suggestion = suggestState?.suggestion
 
   const suggestionRange = useMemo(() => {
     if (!suggestion?.estimatedLow || !suggestion?.estimatedHigh) return null
@@ -84,13 +83,102 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
     if (aiEstimatedHighRef.current) aiEstimatedHighRef.current.value = String(suggestion.estimatedHigh ?? '')
     if (aiConfidenceRef.current) aiConfidenceRef.current.value = suggestion.confidence
     if (aiExplanationRef.current) aiExplanationRef.current.value = suggestion.explanation
-    if (aiFingerprintRef.current) aiFingerprintRef.current.value = suggestState?.fingerprint ?? ''
+    if (aiFingerprintRef.current) aiFingerprintRef.current.value = suggestFingerprint ?? ''
 
     setSuggestNotice('Applied the suggestion. You can still override the trade value anytime.')
   }
 
+  function readSuggestPayload() {
+    const form = formRef.current
+    if (!form) return null
+
+    const get = (name: string) =>
+      (form.querySelector(`[name="${CSS.escape(name)}"]`) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)
+        ?.value ?? ''
+
+    const getChecked = (name: string) =>
+      (form.querySelector(`[name="${CSS.escape(name)}"]`) as HTMLInputElement | null)?.checked ?? false
+
+    const rawQuantity = get('quantity').trim()
+    const quantity = rawQuantity ? Number.parseInt(rawQuantity, 10) : null
+
+    const desired = get('desired_categories')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .slice(0, 8)
+
+    const payload = {
+      title: get('title').trim(),
+      description: get('description').trim() || null,
+      category: get('category'),
+      condition: get('condition'),
+      brand: get('brand').trim() || null,
+      model: get('model').trim() || null,
+      quantity: Number.isFinite(quantity) ? quantity : null,
+      isBundle: getChecked('is_bundle'),
+      desiredCategories: desired.length ? desired : null,
+      openToAnything: getChecked('open_to_anything'),
+    }
+
+    return payload
+  }
+
+  async function handleSuggestValue() {
+    setSuggestNotice(null)
+    setSuggestError(null)
+
+    const payload = readSuggestPayload()
+    if (!payload) {
+      setSuggestError('Unable to read listing details.')
+      return
+    }
+
+    // Lightweight dedupe: avoid re-calling if inputs are identical.
+    const inputKey = JSON.stringify(payload)
+    if (lastSuggestInputKey && inputKey === lastSuggestInputKey && suggestion) {
+      setSuggestNotice('Suggestion is already up to date for the current details.')
+      return
+    }
+
+    if (payload.title.length < 3) {
+      setSuggestError('Add a title first.')
+      return
+    }
+
+    setSuggestLoading(true)
+
+    try {
+      const response = await fetch('/api/listings/suggest-value', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = (await response.json()) as
+        | { suggestion: ListingValueSuggestion; fingerprint: string }
+        | { error: string }
+
+      if (!response.ok) {
+        throw new Error('error' in data ? data.error : 'Unable to generate suggestion.')
+      }
+
+      if (!('suggestion' in data)) {
+        throw new Error('Unable to generate suggestion.')
+      }
+
+      setSuggestion(data.suggestion)
+      setSuggestFingerprint(data.fingerprint)
+      setLastSuggestInputKey(inputKey)
+    } catch (error) {
+      setSuggestError(error instanceof Error ? error.message : 'Unable to generate suggestion.')
+    } finally {
+      setSuggestLoading(false)
+    }
+  }
+
   return (
-    <form action={formAction} className="space-y-6 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm">
+    <form ref={formRef} action={formAction} className="space-y-6 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm">
       <div>
         <h1 className="text-3xl font-semibold text-stone-900">
           {mode === 'create' ? 'Create listing' : 'Edit listing'}
@@ -252,26 +340,18 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
             </p>
           </div>
           <button
-            type="submit"
-            formAction={suggestAction}
-            formNoValidate
-            onClick={(event) => {
-              setSuggestNotice(null)
-              const existingFingerprint = aiFingerprintRef.current?.value
-              if (suggestion && suggestState?.fingerprint && existingFingerprint === suggestState.fingerprint) {
-                event.preventDefault()
-                setSuggestNotice('Suggestion is already up to date for the current details.')
-              }
-            }}
+            type="button"
+            onClick={handleSuggestValue}
+            disabled={suggestLoading}
             className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-400"
           >
-            {suggestion ? 'Suggest again' : 'Suggest value'}
+            {suggestLoading ? 'Thinking...' : suggestion ? 'Suggest again' : 'Suggest value'}
           </button>
         </div>
 
-        {suggestState?.error ? (
+        {suggestError ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Suggestion unavailable: {suggestState.error}. You can still set your own value.
+            Suggestion unavailable: {suggestError}. You can still set your own value.
           </div>
         ) : null}
 
