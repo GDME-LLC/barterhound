@@ -6,7 +6,6 @@ export const supabaseConfig = {
   publicUrl,
   publicAnonKey,
   serviceRoleKey,
-  appUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
   mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
 }
 

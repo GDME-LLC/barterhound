@@ -32,7 +32,6 @@ async function startFacebookOAuth(request: Request) {
     )
   }
 
-  // Important: use 303 so a POST -> redirect becomes a GET to Supabase /authorize.
   return NextResponse.redirect(data.url, 303)
 }
 
