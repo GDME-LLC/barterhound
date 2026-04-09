@@ -289,6 +289,7 @@ export async function createListingAction(
 
     return { success: `Listing created:${listing.id}` }
   } catch (error) {
+    console.error('createListingAction failed', error)
     return {
       error: error instanceof Error ? error.message : 'Unable to create listing.',
     }
@@ -354,6 +355,7 @@ export async function updateListingAction(
 
     return { success: 'Listing saved.' }
   } catch (error) {
+    console.error('updateListingAction failed', error)
     return {
       error: error instanceof Error ? error.message : 'Unable to update listing.',
     }
