@@ -11,6 +11,7 @@ async function startGoogleOAuth(request: Request) {
   if (!supabase) {
     return NextResponse.redirect(
       new URL('/login?message=Supabase%20is%20not%20configured', appUrl),
+      303,
     )
   }
 
@@ -27,10 +28,12 @@ async function startGoogleOAuth(request: Request) {
         `/login?message=${encodeURIComponent(error?.message ?? 'Unable to start Google sign-in')}`,
         appUrl,
       ),
+      303,
     )
   }
 
-  return NextResponse.redirect(data.url)
+  // Important: use 303 so a POST -> redirect becomes a GET to Supabase /authorize.
+  return NextResponse.redirect(data.url, 303)
 }
 
 export async function GET(request: Request) {
