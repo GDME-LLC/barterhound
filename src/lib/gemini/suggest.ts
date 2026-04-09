@@ -39,18 +39,36 @@ export async function suggestListingValue(input: ListingValueSuggestionInput): P
   fingerprint: string
 }> {
   const client = getGeminiClient()
-  const model = getGeminiModelName()
+  const preferredModel = getGeminiModelName()
   const fingerprint = fingerprintListingValueInput(input)
   const prompt = buildListingValuePrompt(input)
 
-  const response = await client.models.generateContent({
-    model,
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: {
-      temperature: 0.2,
-      maxOutputTokens: 600,
-    },
-  })
+  const modelCandidates = Array.from(
+    new Set([preferredModel, 'gemini-2.0-flash', 'gemini-1.5-flash']),
+  )
+
+  let lastError: unknown = null
+  let response: { text?: string } | null = null
+
+  for (const model of modelCandidates) {
+    try {
+      response = await client.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          temperature: 0.2,
+          maxOutputTokens: 600,
+        },
+      })
+      break
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  if (!response) {
+    throw lastError instanceof Error ? lastError : new Error('Unable to generate suggestion.')
+  }
 
   const rawText = response.text ?? ''
   const jsonText = extractFirstJsonObject(rawText)
