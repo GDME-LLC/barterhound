@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireProfile } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import { suggestListingValue } from '@/lib/gemini/suggest'
 import { z } from 'zod'
 
@@ -18,7 +18,28 @@ const requestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    await requireProfile()
+    const supabase = await createClient()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 500 })
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'You must be signed in.' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Complete your profile first.' }, { status: 403 })
+    }
 
     const body = await request.json()
     const parsed = requestSchema.safeParse(body)
@@ -49,4 +70,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
-

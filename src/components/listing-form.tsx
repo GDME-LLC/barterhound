@@ -26,6 +26,7 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
   const [selectedImagePreviews, setSelectedImagePreviews] = useState<
     { url: string; name: string }[]
   >([])
+  const [selectedImageError, setSelectedImageError] = useState<string | null>(null)
   const tradeValueRef = useRef<HTMLInputElement | null>(null)
   const aiNormalizedTitleRef = useRef<HTMLInputElement | null>(null)
   const aiDetectedBrandRef = useRef<HTMLInputElement | null>(null)
@@ -215,6 +216,21 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
             required={mode === 'create'}
             onChange={(event) => {
               const files = Array.from(event.currentTarget.files ?? [])
+              const maxPerFileBytes = 4 * 1024 * 1024 // 4MB
+              const maxTotalBytes = 20 * 1024 * 1024 // 20MB
+              const tooBig = files.find((file) => file.size > maxPerFileBytes)
+              const total = files.reduce((sum, file) => sum + file.size, 0)
+
+              if (tooBig) {
+                setSelectedImageError(
+                  `“${tooBig.name}” is too large. Please use images under 4MB each.`,
+                )
+              } else if (total > maxTotalBytes) {
+                setSelectedImageError('Selected images total is too large. Keep it under 20MB.')
+              } else {
+                setSelectedImageError(null)
+              }
+
               setSelectedImagePreviews((current) => {
                 current.forEach((preview) => URL.revokeObjectURL(preview.url))
                 return files.map((file) => ({ url: URL.createObjectURL(file), name: file.name }))
@@ -225,6 +241,15 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
           <span className="block text-xs font-normal text-stone-500">
             At least 1 photo is required to create a listing.
           </span>
+          {selectedImageError ? (
+            <span className="block text-xs font-normal text-rose-700">
+              {selectedImageError}
+            </span>
+          ) : (
+            <span className="block text-xs font-normal text-stone-500">
+              Tip: keep images small (under 4MB) for reliable uploads.
+            </span>
+          )}
         </label>
 
         <label className="space-y-2 text-sm font-medium text-stone-700 md:col-span-2">

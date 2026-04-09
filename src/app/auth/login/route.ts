@@ -31,7 +31,15 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser()
 
   if (user) {
-    await ensureProfileRecord({ supabase, user })
+    try {
+      await ensureProfileRecord({ supabase, user })
+    } catch (profileError) {
+      console.error('ensureProfileRecord failed after password login', profileError)
+      return NextResponse.redirect(
+        new URL('/dashboard?message=Signed%20in%2C%20but%20profile%20setup%20failed', appUrl),
+        303,
+      )
+    }
   }
 
   return NextResponse.redirect(new URL(next, appUrl))

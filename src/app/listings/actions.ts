@@ -261,6 +261,20 @@ export async function createListingAction(
       throw new Error('You can upload up to 8 images.')
     }
 
+    // Guardrails to avoid platform request limits turning into generic client crashes.
+    const maxPerFileBytes = 4 * 1024 * 1024 // 4MB
+    const maxTotalBytes = 20 * 1024 * 1024 // 20MB
+    const tooLarge = imageFiles.find((file) => file.size > maxPerFileBytes)
+    const totalBytes = imageFiles.reduce((sum, file) => sum + file.size, 0)
+
+    if (tooLarge) {
+      throw new Error(`“${tooLarge.name}” is too large. Please use images under 4MB each.`)
+    }
+
+    if (totalBytes > maxTotalBytes) {
+      throw new Error('Selected images total is too large. Keep it under 20MB.')
+    }
+
     const { data: listing, error } = await supabase
       .from('listings')
       .insert({
@@ -326,6 +340,19 @@ export async function updateListingAction(
     const imageFiles = formData
       .getAll('images')
       .filter((value): value is File => value instanceof File && value.size > 0)
+
+    const maxPerFileBytes = 4 * 1024 * 1024 // 4MB
+    const maxTotalBytes = 20 * 1024 * 1024 // 20MB
+    const tooLarge = imageFiles.find((file) => file.size > maxPerFileBytes)
+    const totalBytes = imageFiles.reduce((sum, file) => sum + file.size, 0)
+
+    if (tooLarge) {
+      throw new Error(`“${tooLarge.name}” is too large. Please use images under 4MB each.`)
+    }
+
+    if (totalBytes > maxTotalBytes) {
+      throw new Error('Selected images total is too large. Keep it under 20MB.')
+    }
 
     if ((existingImages?.length ?? 0) + imageFiles.length > 8) {
       throw new Error('Listings can only have up to 8 images.')
