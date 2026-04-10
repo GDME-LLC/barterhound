@@ -6,10 +6,12 @@ export function FormSubmitButton({
   label,
   pendingLabel,
   className,
+  disabled,
 }: {
   label: string
   pendingLabel?: string
   className?: string
+  disabled?: boolean
 }) {
   const { pending } = useFormStatus()
 
@@ -17,7 +19,7 @@ export function FormSubmitButton({
     <button
       type="submit"
       className={className}
-      disabled={pending}
+      disabled={pending || disabled}
     >
       {pending ? pendingLabel ?? 'Saving...' : label}
     </button>

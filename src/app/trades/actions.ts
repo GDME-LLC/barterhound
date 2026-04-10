@@ -123,6 +123,63 @@ export async function updateTradeStatusAction(formData: FormData) {
   revalidatePath(`/profile/${trade.receiver_id}`)
 }
 
+export async function saveMeetupLocationAction(
+  _previousState: ActionState | undefined,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const { supabase, user } = await requireProfile()
+    const tradeId = requireString(formData, 'trade_id', 'Trade')
+    const label = requireString(formData, 'meetup_location', 'Meetup spot', 3)
+
+    // `meetup_lat/lng` may come through as floats.
+    const rawLat = String(formData.get('meetup_lat') ?? '').trim()
+    const rawLng = String(formData.get('meetup_lng') ?? '').trim()
+    const nextLat = rawLat ? Number.parseFloat(rawLat) : null
+    const nextLng = rawLng ? Number.parseFloat(rawLng) : null
+
+    if (nextLat != null && (Number.isNaN(nextLat) || nextLat < -90 || nextLat > 90)) {
+      throw new Error('Latitude must be between -90 and 90.')
+    }
+
+    if (nextLng != null && (Number.isNaN(nextLng) || nextLng < -180 || nextLng > 180)) {
+      throw new Error('Longitude must be between -180 and 180.')
+    }
+
+    const { data: trade } = await supabase
+      .from('trades')
+      .select('*')
+      .eq('id', tradeId)
+      .or(`initiator_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .maybeSingle()
+
+    if (!trade || trade.type !== 'local_meetup') {
+      throw new Error('Meetup locations are only available for local trades.')
+    }
+
+    const { error } = await supabase
+      .from('trades')
+      .update({
+        meetup_location: label,
+        meetup_lat: nextLat,
+        meetup_lng: nextLng,
+      })
+      .eq('id', tradeId)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    revalidatePath(`/trades/${tradeId}/shipment`)
+
+    return { success: 'Meetup location saved.' }
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Unable to save meetup location.',
+    }
+  }
+}
+
 export async function createReviewAction(
   _previousState: ActionState | undefined,
   formData: FormData,

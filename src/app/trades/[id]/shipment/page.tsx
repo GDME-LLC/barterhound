@@ -5,6 +5,8 @@ import { formatCurrency } from '@/lib/format'
 import { ReviewForm } from '@/components/review-form'
 import { updateTradeStatusAction } from '@/app/trades/actions'
 import { ShipmentForm } from '@/components/shipment-form'
+import { MeetupPicker } from '@/components/meetup-picker'
+import { supabaseConfig } from '@/lib/supabase/config'
 
 export default async function ShipmentPage({
   params,
@@ -126,13 +128,23 @@ export default async function ShipmentPage({
           ) : null}
 
           {trade.type === 'local_meetup' ? (
-            <div className="rounded-2xl border border-stone-200 px-4 py-4">
-              <p className="text-sm font-medium text-stone-900">Meetup notes</p>
-              <p className="mt-2 text-sm text-stone-500">
-                Coordinate the exact time and address outside the app, then use
-                the status buttons here to keep the trade record accurate.
-              </p>
-            </div>
+            supabaseConfig.mapboxToken ? (
+              <MeetupPicker
+                tradeId={trade.id}
+                token={supabaseConfig.mapboxToken}
+                initialLabel={trade.meetup_location}
+                initialLat={trade.meetup_lat}
+                initialLng={trade.meetup_lng}
+                disabled={trade.status === 'completed' || trade.status === 'cancelled'}
+              />
+            ) : (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-950">
+                <p className="text-sm font-medium">Mapbox token required</p>
+                <p className="mt-2 text-sm text-amber-900">
+                  Add `NEXT_PUBLIC_MAPBOX_TOKEN` to enable landmark search and map pin selection for meetup spots.
+                </p>
+              </div>
+            )
           ) : (
             <div className="space-y-4 rounded-2xl border border-stone-200 px-4 py-4">
               <div className="flex items-center justify-between gap-4">
