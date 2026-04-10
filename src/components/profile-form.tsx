@@ -81,9 +81,9 @@ export function ProfileForm({
             accept="image/*"
             onChange={(event) => {
               const file = event.currentTarget.files?.[0]
-              const maxAvatarBytes = 4 * 1024 * 1024 // 4MB
+              const maxAvatarBytes = 10 * 1024 * 1024 // 10MB
               if (file && file.size > maxAvatarBytes) {
-                setAvatarFileError('Selected avatar is too large. Please use an image under 4MB.')
+                setAvatarFileError('Selected avatar is too large. Please use an image under 10MB.')
               } else {
                 setAvatarFileError(null)
               }
@@ -98,7 +98,7 @@ export function ProfileForm({
             <span className="block text-xs font-normal text-rose-700">{avatarFileError}</span>
           ) : (
             <span className="block text-xs font-normal text-stone-500">
-              Tip: keep avatars small (under 4MB) for reliable uploads.
+              Tip: smaller avatars upload faster and fail less often.
             </span>
           )}
         </label>

@@ -43,9 +43,9 @@ export async function saveProfileAction(
     const avatar = formData.get('avatar')
 
     if (avatar instanceof File && avatar.size > 0) {
-      const maxAvatarBytes = 4 * 1024 * 1024 // 4MB
+      const maxAvatarBytes = 10 * 1024 * 1024 // 10MB
       if (avatar.size > maxAvatarBytes) {
-        throw new Error('Avatar image is too large. Please use an image under 4MB.')
+        throw new Error('Avatar image is too large. Please use an image under 10MB.')
       }
 
       const admin = createAdminClient()

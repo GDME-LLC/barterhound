@@ -262,17 +262,17 @@ export async function createListingAction(
     }
 
     // Guardrails to avoid platform request limits turning into generic client crashes.
-    const maxPerFileBytes = 4 * 1024 * 1024 // 4MB
-    const maxTotalBytes = 20 * 1024 * 1024 // 20MB
+    const maxPerFileBytes = 10 * 1024 * 1024 // 10MB
+    const maxTotalBytes = 60 * 1024 * 1024 // 60MB
     const tooLarge = imageFiles.find((file) => file.size > maxPerFileBytes)
     const totalBytes = imageFiles.reduce((sum, file) => sum + file.size, 0)
 
     if (tooLarge) {
-      throw new Error(`“${tooLarge.name}” is too large. Please use images under 4MB each.`)
+      throw new Error(`“${tooLarge.name}” is too large. Please use images under 10MB each.`)
     }
 
     if (totalBytes > maxTotalBytes) {
-      throw new Error('Selected images total is too large. Keep it under 20MB.')
+      throw new Error('Selected images total is too large. Keep it under 60MB.')
     }
 
     const { data: listing, error } = await supabase
@@ -341,17 +341,17 @@ export async function updateListingAction(
       .getAll('images')
       .filter((value): value is File => value instanceof File && value.size > 0)
 
-    const maxPerFileBytes = 4 * 1024 * 1024 // 4MB
-    const maxTotalBytes = 20 * 1024 * 1024 // 20MB
+    const maxPerFileBytes = 10 * 1024 * 1024 // 10MB
+    const maxTotalBytes = 60 * 1024 * 1024 // 60MB
     const tooLarge = imageFiles.find((file) => file.size > maxPerFileBytes)
     const totalBytes = imageFiles.reduce((sum, file) => sum + file.size, 0)
 
     if (tooLarge) {
-      throw new Error(`“${tooLarge.name}” is too large. Please use images under 4MB each.`)
+      throw new Error(`“${tooLarge.name}” is too large. Please use images under 10MB each.`)
     }
 
     if (totalBytes > maxTotalBytes) {
-      throw new Error('Selected images total is too large. Keep it under 20MB.')
+      throw new Error('Selected images total is too large. Keep it under 60MB.')
     }
 
     if ((existingImages?.length ?? 0) + imageFiles.length > 8) {

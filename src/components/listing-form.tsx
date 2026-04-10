@@ -216,17 +216,17 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
             required={mode === 'create'}
             onChange={(event) => {
               const files = Array.from(event.currentTarget.files ?? [])
-              const maxPerFileBytes = 4 * 1024 * 1024 // 4MB
-              const maxTotalBytes = 20 * 1024 * 1024 // 20MB
+              const maxPerFileBytes = 10 * 1024 * 1024 // 10MB
+              const maxTotalBytes = 60 * 1024 * 1024 // 60MB
               const tooBig = files.find((file) => file.size > maxPerFileBytes)
               const total = files.reduce((sum, file) => sum + file.size, 0)
 
               if (tooBig) {
                 setSelectedImageError(
-                  `“${tooBig.name}” is too large. Please use images under 4MB each.`,
+                  `“${tooBig.name}” is too large. Please use images under 10MB each.`,
                 )
               } else if (total > maxTotalBytes) {
-                setSelectedImageError('Selected images total is too large. Keep it under 20MB.')
+                setSelectedImageError('Selected images total is too large. Keep it under 60MB.')
               } else {
                 setSelectedImageError(null)
               }
@@ -247,7 +247,7 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
             </span>
           ) : (
             <span className="block text-xs font-normal text-stone-500">
-              Tip: keep images small (under 4MB) for reliable uploads.
+              Tip: smaller images upload faster and fail less often.
             </span>
           )}
         </label>
