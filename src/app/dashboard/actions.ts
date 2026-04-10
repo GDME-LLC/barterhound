@@ -43,6 +43,11 @@ export async function saveProfileAction(
     const avatar = formData.get('avatar')
 
     if (avatar instanceof File && avatar.size > 0) {
+      const maxAvatarBytes = 4 * 1024 * 1024 // 4MB
+      if (avatar.size > maxAvatarBytes) {
+        throw new Error('Avatar image is too large. Please use an image under 4MB.')
+      }
+
       const admin = createAdminClient()
 
       if (!admin) {
@@ -51,7 +56,7 @@ export async function saveProfileAction(
 
       const extension = avatar.name.split('.').pop()?.toLowerCase() || 'jpg'
       const storagePath = `${user.id}/avatar-${Date.now()}.${extension}`
-      const bytes = Buffer.from(await avatar.arrayBuffer())
+      const bytes = new Uint8Array(await avatar.arrayBuffer())
 
       const { error: uploadError } = await admin.storage
         .from('avatars')
@@ -89,6 +94,7 @@ export async function saveProfileAction(
 
     return { success: 'Profile saved.' }
   } catch (error) {
+    console.error('saveProfileAction failed', error)
     return {
       error: error instanceof Error ? error.message : 'Unable to save profile.',
     }

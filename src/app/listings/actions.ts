@@ -211,7 +211,7 @@ async function uploadListingImages({
   for (const [index, file] of files.entries()) {
     const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
     const storagePath = `${userId}/${listingId}-${Date.now()}-${index}.${extension}`
-    const bytes = Buffer.from(await file.arrayBuffer())
+    const bytes = new Uint8Array(await file.arrayBuffer())
 
     const { error: uploadError } = await admin.storage
       .from('listing-images')

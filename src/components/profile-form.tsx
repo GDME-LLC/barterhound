@@ -14,6 +14,7 @@ export function ProfileForm({
 }) {
   const [state, formAction] = useActionState(saveProfileAction, undefined)
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
+  const [avatarFileError, setAvatarFileError] = useState<string | null>(null)
 
   useEffect(() => {
     return () => {
@@ -80,6 +81,12 @@ export function ProfileForm({
             accept="image/*"
             onChange={(event) => {
               const file = event.currentTarget.files?.[0]
+              const maxAvatarBytes = 4 * 1024 * 1024 // 4MB
+              if (file && file.size > maxAvatarBytes) {
+                setAvatarFileError('Selected avatar is too large. Please use an image under 4MB.')
+              } else {
+                setAvatarFileError(null)
+              }
               setAvatarPreviewUrl((current) => {
                 if (current) URL.revokeObjectURL(current)
                 return file ? URL.createObjectURL(file) : null
@@ -87,6 +94,13 @@ export function ProfileForm({
             }}
             className="w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3"
           />
+          {avatarFileError ? (
+            <span className="block text-xs font-normal text-rose-700">{avatarFileError}</span>
+          ) : (
+            <span className="block text-xs font-normal text-stone-500">
+              Tip: keep avatars small (under 4MB) for reliable uploads.
+            </span>
+          )}
         </label>
       </div>
 
