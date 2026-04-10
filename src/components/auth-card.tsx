@@ -23,8 +23,8 @@ export function AuthCard({
     <main className="mx-auto flex min-h-[70vh] max-w-xl flex-col justify-center gap-6">
       {!hasSupabaseBrowserEnv() && <SupabaseWarning />}
 
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-semibold text-stone-900">{title}</h1>
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
+        <h1 className="text-2xl font-semibold text-stone-900 sm:text-3xl">{title}</h1>
         <p className="mt-3 text-stone-500">{description}</p>
 
         {message ? (

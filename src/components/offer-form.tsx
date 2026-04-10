@@ -28,7 +28,7 @@ export function OfferForm({
   return (
     <form action={formAction} className="space-y-6 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm">
       <div>
-        <h1 className="text-3xl font-semibold text-stone-900">Build an offer</h1>
+        <h1 className="text-2xl font-semibold text-stone-900 sm:text-3xl">Build an offer</h1>
         <p className="mt-2 text-sm text-stone-500">
           Offer one or more of your active listings, optional credits, and a short message.
         </p>

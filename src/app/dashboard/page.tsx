@@ -54,11 +54,11 @@ export default async function DashboardPage({
 
   return (
     <main className="space-y-8">
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-sm">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-brand-600">
           Authenticated workspace
         </p>
-        <h1 className="mt-3 text-4xl font-semibold text-stone-900">
+        <h1 className="mt-3 text-3xl font-semibold text-stone-900 sm:text-4xl">
           {profile?.display_name || profile?.username || user.email}
         </h1>
         <p className="mt-3 max-w-2xl text-stone-500">
@@ -75,23 +75,23 @@ export default async function DashboardPage({
       <section className="grid gap-4 md:grid-cols-4">
         <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-stone-500">Listings</p>
-          <p className="mt-2 text-3xl font-semibold">{listings?.length ?? 0}</p>
+          <p className="mt-2 text-2xl font-semibold sm:text-3xl">{listings?.length ?? 0}</p>
         </article>
         <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-stone-500">Incoming offers</p>
-          <p className="mt-2 text-3xl font-semibold">{incomingOffers?.length ?? 0}</p>
+          <p className="mt-2 text-2xl font-semibold sm:text-3xl">{incomingOffers?.length ?? 0}</p>
         </article>
         <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-stone-500">Credits</p>
-          <p className="mt-2 text-3xl font-semibold">{formatCurrency(creditBalance)}</p>
+          <p className="mt-2 text-2xl font-semibold sm:text-3xl">{formatCurrency(creditBalance)}</p>
         </article>
         <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-stone-500">Completion rate</p>
-          <p className="mt-2 text-3xl font-semibold">{formatPercent(completionRate)}</p>
+          <p className="mt-2 text-2xl font-semibold sm:text-3xl">{formatPercent(completionRate)}</p>
         </article>
         <article className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-stone-500">Lifetime equity</p>
-          <p className="mt-2 text-3xl font-semibold">{formatCurrency(lifetimeEquity)}</p>
+          <p className="mt-2 text-2xl font-semibold sm:text-3xl">{formatCurrency(lifetimeEquity)}</p>
         </article>
       </section>
 

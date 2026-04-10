@@ -17,7 +17,7 @@ export default async function ListingDetailPage({
 
   if (!supabase) {
     return (
-      <main className="rounded-3xl border border-amber-200 bg-amber-50 p-8 text-amber-950">
+      <main className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-amber-950 sm:p-8">
         <h1 className="text-2xl font-semibold">Listing unavailable</h1>
         <p className="mt-2 text-sm text-amber-900">
           Configure Supabase to browse listing details.
@@ -80,7 +80,7 @@ export default async function ListingDetailPage({
           <p className="text-sm uppercase tracking-[0.2em] text-brand-600">
             {listing.category}
           </p>
-          <h1 className="mt-3 text-4xl font-semibold text-stone-900">
+          <h1 className="mt-3 text-3xl font-semibold text-stone-900 sm:text-4xl">
             {listing.title}
           </h1>
           <p className="mt-4 text-stone-500">{listing.description || 'No description yet.'}</p>

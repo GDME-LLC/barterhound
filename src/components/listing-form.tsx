@@ -306,7 +306,7 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
       }}
     >
       <div>
-        <h1 className="text-3xl font-semibold text-stone-900">
+        <h1 className="text-2xl font-semibold text-stone-900 sm:text-3xl">
           {mode === 'create' ? 'Create listing' : 'Edit listing'}
         </h1>
         <p className="mt-2 text-sm text-stone-500">

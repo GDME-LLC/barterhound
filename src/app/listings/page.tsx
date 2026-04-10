@@ -14,11 +14,11 @@ export default async function ListingsPage({
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-sm">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
         <p className="text-sm uppercase tracking-[0.2em] text-brand-600">
           Browse listings
         </p>
-        <h1 className="mt-3 text-4xl font-semibold text-stone-900">
+        <h1 className="mt-3 text-3xl font-semibold text-stone-900 sm:text-4xl">
           Find local barter opportunities
         </h1>
         <p className="mt-3 max-w-2xl text-stone-500">
@@ -35,7 +35,7 @@ export default async function ListingsPage({
         {listings.length > 0 ? (
           listings.map((listing) => <ListingCard key={listing.id} listing={listing} />)
         ) : (
-          <div className="rounded-3xl border border-dashed border-stone-200 bg-white p-8 text-sm text-stone-500 md:col-span-2 xl:col-span-3">
+          <div className="rounded-3xl border border-dashed border-stone-200 bg-white p-6 text-sm text-stone-500 md:col-span-2 xl:col-span-3 sm:p-8">
             No listings matched these filters yet.
           </div>
         )}

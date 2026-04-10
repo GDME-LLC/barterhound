@@ -72,7 +72,10 @@ export function ListingMap({
 
   return (
     <div className="space-y-4">
-      <div ref={mapRef} className="h-[480px] w-full overflow-hidden rounded-[2rem] border border-stone-200" />
+      <div
+        ref={mapRef}
+        className="h-[360px] w-full overflow-hidden rounded-[2rem] border border-stone-200 sm:h-[480px]"
+      />
       <div className="flex flex-wrap gap-3">
         {listings.slice(0, 6).map((listing) => (
           <Link

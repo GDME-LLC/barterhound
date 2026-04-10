@@ -14,8 +14,8 @@ export default async function MapPage({
   if (!supabaseConfig.mapboxToken) {
     return (
       <main className="space-y-6">
-        <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-8 text-amber-950">
-          <h1 className="text-3xl font-semibold">Mapbox token required</h1>
+        <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 text-amber-950 sm:p-8">
+          <h1 className="text-2xl font-semibold sm:text-3xl">Mapbox token required</h1>
           <p className="mt-3 max-w-2xl text-amber-900">
             Add `NEXT_PUBLIC_MAPBOX_TOKEN` to your environment before using the
             map browse experience.
@@ -39,11 +39,11 @@ export default async function MapPage({
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-sm">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
         <p className="text-sm uppercase tracking-[0.2em] text-brand-600">
           Map browse
         </p>
-        <h1 className="mt-3 text-4xl font-semibold text-stone-900">
+        <h1 className="mt-3 text-3xl font-semibold text-stone-900 sm:text-4xl">
           See listings near you
         </h1>
         <p className="mt-3 max-w-2xl text-stone-500">
@@ -57,7 +57,7 @@ export default async function MapPage({
       {mappableListings.length > 0 ? (
         <ListingMap listings={mappableListings} token={supabaseConfig.mapboxToken} />
       ) : (
-        <div className="rounded-3xl border border-dashed border-stone-200 bg-white p-8 text-sm text-stone-500">
+        <div className="rounded-3xl border border-dashed border-stone-200 bg-white p-6 text-sm text-stone-500 sm:p-8">
           No mappable listings matched these filters yet.
         </div>
       )}

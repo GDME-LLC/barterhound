@@ -52,9 +52,9 @@ export default async function ShipmentPage({
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-sm">
+      <section className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm sm:p-8">
         <p className="text-sm uppercase tracking-[0.2em] text-brand-600">Trade workspace</p>
-        <h1 className="mt-3 text-4xl font-semibold text-stone-900">
+        <h1 className="mt-3 text-3xl font-semibold text-stone-900 sm:text-4xl">
           {listing?.title ?? 'Trade detail'}
         </h1>
         <p className="mt-3 text-stone-500">
