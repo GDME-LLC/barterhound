@@ -44,7 +44,13 @@ export async function suggestListingValue(input: ListingValueSuggestionInput): P
   const prompt = buildListingValuePrompt(input)
 
   const modelCandidates = Array.from(
-    new Set([preferredModel, 'gemini-2.0-flash', 'gemini-1.5-flash']),
+    new Set([
+      preferredModel,
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'models/gemini-2.5-flash',
+      'models/gemini-2.0-flash',
+    ]),
   )
 
   let lastError: unknown = null
