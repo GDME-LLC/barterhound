@@ -240,24 +240,65 @@ async function uploadListingImages({
   }
 }
 
+function parseUploadedImages(formData: FormData) {
+  const raw = String(formData.get('uploaded_images') ?? '').trim()
+  if (!raw) return null
+
+  const parsed = JSON.parse(raw)
+  if (!Array.isArray(parsed)) {
+    throw new Error('Uploaded images payload is invalid.')
+  }
+
+  const rows = parsed
+    .map((row: any) => ({
+      storage_path: typeof row.storage_path === 'string' ? row.storage_path : null,
+      url: typeof row.url === 'string' ? row.url : null,
+      position: typeof row.position === 'number' ? row.position : null,
+    }))
+    .filter((row: any) => row.storage_path && row.url && Number.isInteger(row.position))
+
+  if (rows.length !== parsed.length) {
+    throw new Error('Uploaded images payload is invalid.')
+  }
+
+  if (rows.length > 8) {
+    throw new Error('You can upload up to 8 images.')
+  }
+
+  return rows as { storage_path: string; url: string; position: number }[]
+}
+
+function parseOptionalUuid(formData: FormData, key: string) {
+  const value = String(formData.get(key) ?? '').trim()
+  if (!value) return null
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(value)) {
+    throw new Error('Invalid identifier.')
+  }
+  return value
+}
+
 export async function createListingAction(
   _previousState: ActionState | undefined,
   formData: FormData,
 ): Promise<ActionState> {
   try {
     const { supabase, user } = await requireProfile()
+    const clientListingId = parseOptionalUuid(formData, 'client_listing_id')
     const values = parseListingInput(formData)
     const details = parseDetailFields(formData)
     const aiValues = parseAiValueFields(formData)
+    const uploadedImages = parseUploadedImages(formData)
     const imageFiles = formData
       .getAll('images')
       .filter((value): value is File => value instanceof File && value.size > 0)
 
-    if (imageFiles.length < 1) {
+    if ((uploadedImages?.length ?? 0) < 1 && imageFiles.length < 1) {
       throw new Error('At least 1 photo is required.')
     }
 
-    if (imageFiles.length > 8) {
+    if ((uploadedImages?.length ?? 0) === 0 && imageFiles.length > 8) {
       throw new Error('You can upload up to 8 images.')
     }
 
@@ -278,6 +319,7 @@ export async function createListingAction(
     const { data: listing, error } = await supabase
       .from('listings')
       .insert({
+        ...(clientListingId ? { id: clientListingId } : null),
         ...values,
         ...details,
         ...aiValues,
@@ -290,12 +332,27 @@ export async function createListingAction(
       throw new Error(error?.message ?? 'Unable to create listing.')
     }
 
-    await uploadListingImages({
-      listingId: listing.id,
-      userId: user.id,
-      files: imageFiles,
-      startingPosition: 0,
-    })
+    if (uploadedImages?.length) {
+      const { error: imagesError } = await supabase.from('listing_images').insert(
+        uploadedImages.map((row) => ({
+          listing_id: listing.id,
+          storage_path: row.storage_path,
+          url: row.url,
+          position: row.position,
+        })),
+      )
+
+      if (imagesError) {
+        throw new Error(imagesError.message)
+      }
+    } else {
+      await uploadListingImages({
+        listingId: listing.id,
+        userId: user.id,
+        files: imageFiles,
+        startingPosition: 0,
+      })
+    }
 
     revalidatePath('/dashboard')
     revalidatePath('/listings')
@@ -320,6 +377,7 @@ export async function updateListingAction(
     const values = parseListingInput(formData)
     const details = parseDetailFields(formData)
     const aiValues = parseAiValueFields(formData)
+    const uploadedImages = parseUploadedImages(formData)
 
     const { data: listing } = await supabase
       .from('listings')
@@ -368,12 +426,27 @@ export async function updateListingAction(
       throw new Error(error.message)
     }
 
-    await uploadListingImages({
-      listingId,
-      userId: user.id,
-      files: imageFiles,
-      startingPosition: existingImages?.length ?? 0,
-    })
+    if (uploadedImages?.length) {
+      const { error: imagesError } = await supabase.from('listing_images').insert(
+        uploadedImages.map((row) => ({
+          listing_id: listingId,
+          storage_path: row.storage_path,
+          url: row.url,
+          position: row.position,
+        })),
+      )
+
+      if (imagesError) {
+        throw new Error(imagesError.message)
+      }
+    } else {
+      await uploadListingImages({
+        listingId,
+        userId: user.id,
+        files: imageFiles,
+        startingPosition: existingImages?.length ?? 0,
+      })
+    }
 
     revalidatePath('/dashboard')
     revalidatePath('/listings')

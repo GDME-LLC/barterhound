@@ -40,9 +40,13 @@ export async function saveProfileAction(
     })
 
     let avatarUrl = optionalString(formData, 'existing_avatar_url')
+    const uploadedAvatarUrl = optionalString(formData, 'uploaded_avatar_url')
+    if (uploadedAvatarUrl) {
+      avatarUrl = uploadedAvatarUrl
+    }
     const avatar = formData.get('avatar')
 
-    if (avatar instanceof File && avatar.size > 0) {
+    if (!uploadedAvatarUrl && avatar instanceof File && avatar.size > 0) {
       const maxAvatarBytes = 10 * 1024 * 1024 // 10MB
       if (avatar.size > maxAvatarBytes) {
         throw new Error('Avatar image is too large. Please use an image under 10MB.')

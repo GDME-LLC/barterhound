@@ -11,6 +11,7 @@ import { FormMessage } from '@/components/form-message'
 import { FormSubmitButton } from '@/components/form-submit-button'
 import { listingCategories, listingConditions } from '@/lib/listing-options'
 import { formatCurrency } from '@/lib/format'
+import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/client'
 import type { Listing, ListingImage } from '@/types'
 import type { ListingValueSuggestion } from '@/lib/gemini/schema'
 
@@ -23,10 +24,16 @@ type ListingFormProps = {
 export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement | null>(null)
+  const imagesInputRef = useRef<HTMLInputElement | null>(null)
+  const uploadedImagesRef = useRef<HTMLInputElement | null>(null)
+  const clientListingIdRef = useRef<HTMLInputElement | null>(null)
+  const uploadsInFlightRef = useRef(false)
   const [selectedImagePreviews, setSelectedImagePreviews] = useState<
     { url: string; name: string }[]
   >([])
   const [selectedImageError, setSelectedImageError] = useState<string | null>(null)
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
+  const [isUploadingImages, setIsUploadingImages] = useState(false)
   const tradeValueRef = useRef<HTMLInputElement | null>(null)
   const aiNormalizedTitleRef = useRef<HTMLInputElement | null>(null)
   const aiDetectedBrandRef = useRef<HTMLInputElement | null>(null)
@@ -60,6 +67,81 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
       selectedImagePreviews.forEach((preview) => URL.revokeObjectURL(preview.url))
     }
   }, [selectedImagePreviews])
+
+  async function uploadListingImagesClientSide(targetListingId: string, startingPosition: number) {
+    const input = imagesInputRef.current
+    const out = uploadedImagesRef.current
+    if (!input || !out) return { ok: true as const }
+
+    const files = Array.from(input.files ?? []).filter((file) => file.size > 0)
+    if (files.length === 0) return { ok: true as const }
+
+    const maxPerFileBytes = 10 * 1024 * 1024
+    const maxTotalBytes = 60 * 1024 * 1024
+    const tooLarge = files.find((file) => file.size > maxPerFileBytes)
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0)
+
+    if (tooLarge) {
+      return { ok: false as const, error: `“${tooLarge.name}” is too large. Please use images under 10MB each.` }
+    }
+
+    if (totalBytes > maxTotalBytes) {
+      return { ok: false as const, error: 'Selected images total is too large. Keep it under 60MB.' }
+    }
+
+    const supabase = createBrowserSupabaseClient()
+    if (!supabase) {
+      return { ok: false as const, error: 'Supabase is not configured.' }
+    }
+
+    setIsUploadingImages(true)
+    setImageUploadError(null)
+
+    try {
+      const rows: { storage_path: string; url: string; position: number }[] = []
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error('You must be signed in.')
+      }
+
+      for (const [index, file] of files.entries()) {
+        const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+        // Storage path: <userId>/<listingId>-<timestamp>-<index>.<ext>
+        const finalStoragePath = `${user.id}/${targetListingId}-${Date.now()}-${index}.${extension}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('listing-images')
+          .upload(finalStoragePath, file, {
+            contentType: file.type || 'image/jpeg',
+            upsert: false,
+          })
+
+        if (uploadError) {
+          throw new Error(uploadError.message)
+        }
+
+        const { data } = supabase.storage.from('listing-images').getPublicUrl(finalStoragePath)
+        rows.push({
+          storage_path: finalStoragePath,
+          url: data.publicUrl,
+          position: startingPosition + index,
+        })
+      }
+
+      out.value = JSON.stringify(rows)
+      input.disabled = true
+
+      return { ok: true as const }
+    } catch (error) {
+      return { ok: false as const, error: error instanceof Error ? error.message : 'Image upload failed.' }
+    } finally {
+      setIsUploadingImages(false)
+    }
+  }
 
   const suggestionRange = useMemo(() => {
     if (!suggestion?.estimatedLow || !suggestion?.estimatedHigh) return null
@@ -179,7 +261,50 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-6 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm">
+    <form
+      ref={formRef}
+      action={formAction}
+      className="space-y-6 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm"
+      onSubmit={(event) => {
+        if (uploadsInFlightRef.current) return
+        if (selectedImageError) return
+
+        const input = imagesInputRef.current
+        const files = Array.from(input?.files ?? []).filter((file) => file.size > 0)
+        const hasNewImages = files.length > 0
+
+        if (!hasNewImages) return
+
+        event.preventDefault()
+        uploadsInFlightRef.current = true
+
+        const listingId =
+          mode === 'edit'
+            ? listing?.id
+            : (clientListingIdRef.current?.value || crypto.randomUUID())
+
+        if (!listingId) {
+          setImageUploadError('Unable to prepare listing upload.')
+          uploadsInFlightRef.current = false
+          return
+        }
+
+        if (mode === 'create' && clientListingIdRef.current) {
+          clientListingIdRef.current.value = listingId
+        }
+
+        const startingPosition = mode === 'edit' ? images.length : 0
+
+        uploadListingImagesClientSide(listingId, startingPosition).then((result) => {
+          uploadsInFlightRef.current = false
+          if (!result.ok) {
+            setImageUploadError(result.error)
+            return
+          }
+          formRef.current?.requestSubmit()
+        })
+      }}
+    >
       <div>
         <h1 className="text-3xl font-semibold text-stone-900">
           {mode === 'create' ? 'Create listing' : 'Edit listing'}
@@ -196,6 +321,12 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
         <input type="hidden" name="listing_id" value={listing?.id ?? ''} />
       ) : null}
 
+      {mode === 'create' ? (
+        <input ref={clientListingIdRef} type="hidden" name="client_listing_id" defaultValue="" />
+      ) : null}
+
+      <input ref={uploadedImagesRef} type="hidden" name="uploaded_images" defaultValue="" />
+
       <input ref={aiNormalizedTitleRef} type="hidden" name="ai_normalized_title" defaultValue={listing?.ai_normalized_title ?? ''} />
       <input ref={aiDetectedBrandRef} type="hidden" name="ai_detected_brand" defaultValue={listing?.ai_detected_brand ?? ''} />
       <input ref={aiDetectedModelRef} type="hidden" name="ai_detected_model" defaultValue={listing?.ai_detected_model ?? ''} />
@@ -209,11 +340,13 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
         <label className="space-y-2 text-sm font-medium text-stone-700 md:col-span-2">
           Photos
           <input
+            ref={imagesInputRef}
             name="images"
             type="file"
             accept="image/*"
             multiple
             required={mode === 'create'}
+            disabled={isUploadingImages}
             onChange={(event) => {
               const files = Array.from(event.currentTarget.files ?? [])
               const maxPerFileBytes = 10 * 1024 * 1024 // 10MB
@@ -230,6 +363,7 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
               } else {
                 setSelectedImageError(null)
               }
+              setImageUploadError(null)
 
               setSelectedImagePreviews((current) => {
                 current.forEach((preview) => URL.revokeObjectURL(preview.url))
@@ -250,6 +384,11 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
               Tip: smaller images upload faster and fail less often.
             </span>
           )}
+          {imageUploadError ? (
+            <span className="block text-xs font-normal text-rose-700">
+              {imageUploadError}
+            </span>
+          ) : null}
         </label>
 
         <label className="space-y-2 text-sm font-medium text-stone-700 md:col-span-2">

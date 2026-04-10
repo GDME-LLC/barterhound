@@ -1,20 +1,29 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { saveProfileAction } from '@/app/dashboard/actions'
 import { FormMessage } from '@/components/form-message'
 import { FormSubmitButton } from '@/components/form-submit-button'
+import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/client'
 import type { Profile } from '@/types'
 
 export function ProfileForm({
   profile,
+  userId,
 }: {
   profile: Profile | null
+  userId: string
 }) {
   const [state, formAction] = useActionState(saveProfileAction, undefined)
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [avatarFileError, setAvatarFileError] = useState<string | null>(null)
+  const [avatarUploadError, setAvatarUploadError] = useState<string | null>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const formRef = useRef<HTMLFormElement | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement | null>(null)
+  const uploadedAvatarUrlRef = useRef<HTMLInputElement | null>(null)
+  const didUploadRef = useRef(false)
 
   useEffect(() => {
     return () => {
@@ -24,8 +33,78 @@ export function ProfileForm({
     }
   }, [avatarPreviewUrl])
 
+  async function uploadAvatarIfNeeded() {
+    const input = avatarInputRef.current
+    const urlField = uploadedAvatarUrlRef.current
+
+    if (!input || !urlField) return { ok: true as const }
+    if (didUploadRef.current) return { ok: true as const }
+
+    const file = input.files?.[0]
+    if (!file || file.size === 0) return { ok: true as const }
+
+    const maxAvatarBytes = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxAvatarBytes) {
+      return { ok: false as const, error: 'Selected avatar is too large. Please use an image under 10MB.' }
+    }
+
+    const supabase = createBrowserSupabaseClient()
+    if (!supabase) {
+      return { ok: false as const, error: 'Supabase is not configured.' }
+    }
+
+    setIsUploadingAvatar(true)
+    setAvatarUploadError(null)
+
+    try {
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const storagePath = `${userId}/avatar-${Date.now()}.${extension}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(storagePath, file, { contentType: file.type || 'image/jpeg', upsert: true })
+
+      if (uploadError) {
+        throw new Error(uploadError.message)
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(storagePath)
+      urlField.value = data.publicUrl
+
+      didUploadRef.current = true
+      input.disabled = true
+
+      return { ok: true as const }
+    } catch (error) {
+      return { ok: false as const, error: error instanceof Error ? error.message : 'Avatar upload failed.' }
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
   return (
-    <form action={formAction} className="space-y-5 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+    <form
+      ref={formRef}
+      action={formAction}
+      className="space-y-5 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"
+      onSubmit={(event) => {
+        if (didUploadRef.current) return
+        if (avatarFileError) return
+
+        const file = avatarInputRef.current?.files?.[0]
+        if (!file) return
+
+        event.preventDefault()
+
+        uploadAvatarIfNeeded().then((result) => {
+          if (!result.ok) {
+            setAvatarUploadError(result.error)
+            return
+          }
+          formRef.current?.requestSubmit()
+        })
+      }}
+    >
       <div>
         <h2 className="text-2xl font-semibold text-stone-900">
           {profile ? 'Edit profile' : 'Complete your profile'}
@@ -36,6 +115,11 @@ export function ProfileForm({
       </div>
 
       <FormMessage state={state} />
+      {avatarUploadError ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {avatarUploadError}
+        </p>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-2 text-sm font-medium text-stone-700">
@@ -76,9 +160,11 @@ export function ProfileForm({
         <label className="space-y-2 text-sm font-medium text-stone-700 md:col-span-2">
           Avatar
           <input
+            ref={avatarInputRef}
             name="avatar"
             type="file"
             accept="image/*"
+            disabled={isUploadingAvatar}
             onChange={(event) => {
               const file = event.currentTarget.files?.[0]
               const maxAvatarBytes = 10 * 1024 * 1024 // 10MB
@@ -105,6 +191,7 @@ export function ProfileForm({
       </div>
 
       <input type="hidden" name="existing_avatar_url" value={profile?.avatar_url ?? ''} />
+      <input ref={uploadedAvatarUrlRef} type="hidden" name="uploaded_avatar_url" defaultValue="" />
 
       {avatarPreviewUrl ? (
         <div className="rounded-3xl border border-stone-200 bg-stone-50 p-4">

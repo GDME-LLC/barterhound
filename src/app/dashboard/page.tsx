@@ -96,7 +96,7 @@ export default async function DashboardPage({
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.35fr,0.9fr]">
-        <ProfileForm profile={profile} />
+        <ProfileForm profile={profile} userId={user.id} />
 
         <aside className="space-y-4">
           <section className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
