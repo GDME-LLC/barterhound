@@ -63,6 +63,10 @@ function parseListingInput(formData: FormData) {
     throw new Error('Choose at least one trade method.')
   }
 
+  if (isLocal && !locationLabel) {
+    throw new Error('Add a city so local listings can show up on the map.')
+  }
+
   return {
     title,
     description,

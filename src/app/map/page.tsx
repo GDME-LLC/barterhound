@@ -54,13 +54,14 @@ export default async function MapPage({
 
       <ListingFiltersForm filters={filters} />
 
-      {mappableListings.length > 0 ? (
-        <ListingMap listings={mappableListings} token={supabaseConfig.mapboxToken} />
-      ) : (
+      <ListingMap listings={mappableListings} token={supabaseConfig.mapboxToken} />
+
+      {mappableListings.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-stone-200 bg-white p-6 text-sm text-stone-500 sm:p-8">
-          No mappable listings matched these filters yet.
+          No mappable listings yet. Add a city when creating a listing so it can
+          appear on the map.
         </div>
-      )}
+      ) : null}
     </main>
   )
 }

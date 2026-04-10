@@ -38,7 +38,7 @@ export async function SiteShell({
               <Link
                 key={link.href}
                 href={link.href}
-                className="rounded-full px-3 py-2 text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                className="whitespace-nowrap rounded-full px-3 py-1.5 text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 sm:py-2"
               >
                 {link.label}
               </Link>
@@ -50,7 +50,7 @@ export async function SiteShell({
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="rounded-full px-3 py-2 text-stone-600 transition hover:bg-stone-100 hover:text-stone-900"
+                    className="whitespace-nowrap rounded-full px-3 py-1.5 text-stone-600 transition hover:bg-stone-100 hover:text-stone-900 sm:py-2"
                   >
                     {link.label}
                   </Link>
@@ -58,7 +58,7 @@ export async function SiteShell({
                 <form action="/auth/signout" method="post">
                   <button
                     type="submit"
-                    className="rounded-full bg-stone-900 px-4 py-2 font-medium text-white transition hover:bg-stone-700"
+                    className="whitespace-nowrap rounded-full bg-stone-900 px-4 py-1.5 font-medium text-white transition hover:bg-stone-700 sm:py-2"
                   >
                     Sign out
                   </button>
@@ -68,13 +68,13 @@ export async function SiteShell({
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="rounded-full border border-stone-300 px-4 py-2 font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-900"
+                  className="whitespace-nowrap rounded-full border border-stone-300 px-4 py-1.5 font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-900 sm:py-2"
                 >
                   Sign in
                 </Link>
                 <Link
                   href="/signup"
-                  className="rounded-full bg-brand-500 px-4 py-2 font-medium text-white transition hover:bg-brand-600"
+                  className="whitespace-nowrap rounded-full bg-brand-500 px-4 py-1.5 font-medium text-white transition hover:bg-brand-600 sm:py-2"
                 >
                   Create account
                 </Link>

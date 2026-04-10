@@ -15,6 +15,12 @@ import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/clie
 import type { Listing, ListingImage } from '@/types'
 import type { ListingValueSuggestion } from '@/lib/gemini/schema'
 
+type MapboxPlace = {
+  id: string
+  place_name: string
+  center: [number, number]
+}
+
 type ListingFormProps = {
   mode: 'create' | 'edit'
   listing?: Listing | null
@@ -54,6 +60,10 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
   const [suggestLoading, setSuggestLoading] = useState(false)
   const [suggestNotice, setSuggestNotice] = useState<string | null>(null)
   const [lastSuggestInputKey, setLastSuggestInputKey] = useState<string | null>(null)
+  const [locationQuery, setLocationQuery] = useState(listing?.location_label ?? '')
+  const [locationOptions, setLocationOptions] = useState<MapboxPlace[]>([])
+  const [locationLoading, setLocationLoading] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   useEffect(() => {
     if (state?.success?.startsWith('Listing created:')) {
@@ -67,6 +77,61 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
       selectedImagePreviews.forEach((preview) => URL.revokeObjectURL(preview.url))
     }
   }, [selectedImagePreviews])
+
+  useEffect(() => {
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+    const query = locationQuery.trim()
+
+    setLocationError(null)
+
+    if (!token) {
+      // Mapbox is optional for the app overall; the map page will warn if absent.
+      setLocationOptions([])
+      return
+    }
+
+    if (query.length < 3) {
+      setLocationOptions([])
+      return
+    }
+
+    setLocationLoading(true)
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => {
+      fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          query,
+        )}.json?types=place,locality,neighborhood&limit=5&access_token=${encodeURIComponent(
+          token,
+        )}`,
+        { signal: controller.signal },
+      )
+        .then(async (res) => {
+          if (!res.ok) {
+            throw new Error(`Geocoding failed (${res.status})`)
+          }
+          return res.json()
+        })
+        .then((data) => {
+          const features = Array.isArray(data?.features) ? (data.features as MapboxPlace[]) : []
+          setLocationOptions(features)
+        })
+        .catch((error) => {
+          if (error?.name === 'AbortError') return
+          setLocationOptions([])
+          setLocationError(error instanceof Error ? error.message : 'Unable to search locations.')
+        })
+        .finally(() => {
+          setLocationLoading(false)
+        })
+    }, 250)
+
+    return () => {
+      clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [locationQuery])
 
   async function uploadListingImagesClientSide(targetListingId: string, startingPosition: number) {
     const input = imagesInputRef.current
@@ -474,20 +539,56 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
           Available for shipping
         </label>
 
-        <label className="space-y-2 text-sm font-medium text-stone-700">
-          City or neighborhood
-          <input name="location_label" defaultValue={listing?.location_label ?? ''} className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-brand-500" />
-        </label>
+        <div className="space-y-2 text-sm font-medium text-stone-700 md:col-span-2">
+          <label className="block">
+            City (approximate)
+            <input
+              name="location_label"
+              value={locationQuery}
+              onChange={(event) => setLocationQuery(event.target.value)}
+              placeholder="Start typing a city or neighborhood"
+              className="mt-2 w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-brand-500"
+            />
+          </label>
+          <input name="lat" type="hidden" defaultValue={listing?.lat ?? ''} />
+          <input name="lng" type="hidden" defaultValue={listing?.lng ?? ''} />
 
-        <label className="space-y-2 text-sm font-medium text-stone-700">
-          Latitude
-          <input name="lat" type="number" step="0.0001" defaultValue={listing?.lat ?? ''} className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-brand-500" />
-        </label>
+          {locationLoading ? (
+            <p className="text-xs font-normal text-stone-500">Searching...</p>
+          ) : null}
 
-        <label className="space-y-2 text-sm font-medium text-stone-700">
-          Longitude
-          <input name="lng" type="number" step="0.0001" defaultValue={listing?.lng ?? ''} className="w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-brand-500" />
-        </label>
+          {locationError ? (
+            <p className="text-xs font-normal text-rose-700">{locationError}</p>
+          ) : null}
+
+          {locationOptions.length > 0 ? (
+            <div className="grid gap-2">
+              {locationOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left text-sm font-medium text-stone-700 transition hover:border-brand-300 hover:text-brand-700"
+                  onClick={() => {
+                    const form = formRef.current
+                    if (!form) return
+                    const latInput = form.querySelector('input[name="lat"]') as HTMLInputElement | null
+                    const lngInput = form.querySelector('input[name="lng"]') as HTMLInputElement | null
+                    if (latInput) latInput.value = String(option.center?.[1] ?? '')
+                    if (lngInput) lngInput.value = String(option.center?.[0] ?? '')
+                    setLocationQuery(option.place_name)
+                    setLocationOptions([])
+                  }}
+                >
+                  {option.place_name}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <span className="block text-xs font-normal text-stone-500">
+            We store approximate coordinates for map browsing. Exact meetup addresses are not stored.
+          </span>
+        </div>
 
         <label className="space-y-2 text-sm font-medium text-stone-700 md:col-span-2">
           What would you trade for?
