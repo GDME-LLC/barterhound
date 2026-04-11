@@ -26,12 +26,65 @@ export function fingerprintListingValueInput(input: ListingValueSuggestionInput)
 }
 
 function extractFirstJsonObject(text: string) {
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) {
+  const normalized = text
+    .replace(/```(?:json)?/gi, '')
+    .replace(/```/g, '')
+    .trim()
+
+  const start = normalized.indexOf('{')
+  if (start === -1) {
     throw new Error('AI returned an unexpected response.')
   }
-  return text.slice(start, end + 1)
+
+  // Parse the first balanced JSON object starting at the first '{'.
+  // This is resilient against trailing prose and avoids greedy lastIndexOf('}').
+  let depth = 0
+  for (let i = start; i < normalized.length; i += 1) {
+    const char = normalized[i]
+    if (char === '{') depth += 1
+    if (char === '}') depth -= 1
+    if (depth === 0) {
+      return normalized.slice(start, i + 1)
+    }
+  }
+
+  throw new Error('AI returned an unexpected response.')
+}
+
+function getGenerateContentText(response: unknown): string {
+  const anyResponse = response as any
+
+  if (!anyResponse) return ''
+
+  // Some SDK versions expose a direct `text` field.
+  if (typeof anyResponse.text === 'string') return anyResponse.text
+
+  // Others may expose `text()` as a function.
+  if (typeof anyResponse.text === 'function') {
+    try {
+      const value = anyResponse.text()
+      if (typeof value === 'string') return value
+    } catch {
+      // ignore
+    }
+  }
+
+  // Fall back to candidates -> content -> parts.
+  const candidates =
+    anyResponse.candidates ?? anyResponse.response?.candidates ?? anyResponse.result?.candidates
+
+  if (Array.isArray(candidates) && candidates.length > 0) {
+    const parts = candidates[0]?.content?.parts
+    if (Array.isArray(parts)) {
+      const text = parts
+        .map((part: any) => (typeof part?.text === 'string' ? part.text : ''))
+        .join('')
+        .trim()
+      if (text) return text
+    }
+  }
+
+  return ''
 }
 
 export async function suggestListingValue(input: ListingValueSuggestionInput): Promise<{
@@ -54,7 +107,7 @@ export async function suggestListingValue(input: ListingValueSuggestionInput): P
   )
 
   let lastError: unknown = null
-  let response: { text?: string } | null = null
+  let response: unknown = null
 
   for (const model of modelCandidates) {
     try {
@@ -64,6 +117,8 @@ export async function suggestListingValue(input: ListingValueSuggestionInput): P
         config: {
           temperature: 0.2,
           maxOutputTokens: 600,
+          // Ask for JSON to reduce parsing issues/cost from extra tokens.
+          responseMimeType: 'application/json',
         },
       })
       break
@@ -76,7 +131,10 @@ export async function suggestListingValue(input: ListingValueSuggestionInput): P
     throw lastError instanceof Error ? lastError : new Error('Unable to generate suggestion.')
   }
 
-  const rawText = response.text ?? ''
+  const rawText = getGenerateContentText(response)
+  if (!rawText) {
+    throw new Error('AI returned an unexpected response.')
+  }
   const jsonText = extractFirstJsonObject(rawText)
   const parsed = listingValueSuggestionSchema.safeParse(JSON.parse(jsonText))
 
