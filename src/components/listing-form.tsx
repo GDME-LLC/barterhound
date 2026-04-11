@@ -102,7 +102,7 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
       fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
           query,
-        )}.json?types=place,locality,neighborhood&limit=5&access_token=${encodeURIComponent(
+        )}.json?types=poi,address,neighborhood,locality,place&limit=5&access_token=${encodeURIComponent(
           token,
         )}`,
         { signal: controller.signal },
@@ -541,12 +541,12 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
 
         <div className="space-y-2 text-sm font-medium text-stone-700 md:col-span-2">
           <label className="block">
-            City (approximate)
+            Pickup area (landmark or neighborhood)
             <input
               name="location_label"
               value={locationQuery}
               onChange={(event) => setLocationQuery(event.target.value)}
-              placeholder="Start typing a city or neighborhood"
+              placeholder="e.g. Tom's West Bay, Acme Shell Station, Downtown Oakland"
               className="mt-2 w-full rounded-2xl border border-stone-300 px-4 py-3 outline-none transition focus:border-brand-500"
             />
           </label>
@@ -586,7 +586,7 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
           ) : null}
 
           <span className="block text-xs font-normal text-stone-500">
-            We store approximate coordinates for map browsing. Exact meetup addresses are not stored.
+            Tip: use a nearby landmark or neighborhood. You can set a precise meetup pin later when a trade is agreed.
           </span>
         </div>
 
