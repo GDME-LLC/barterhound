@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireProfile } from '@/lib/auth'
 import {
   optionalString,
   parseFloatValue,
@@ -14,6 +13,10 @@ import { listingCategories, listingConditions } from '@/lib/listing-options'
 import { suggestListingValue } from '@/lib/gemini/suggest'
 import type { ListingValueSuggestion } from '@/lib/gemini/schema'
 import type { ListingCondition } from '@/types'
+
+// Since this is a personal app, we use a hardcoded ID for the "owner" of listings.
+// You can replace this with your actual user ID from the Supabase 'profiles' table.
+const ADMIN_USER_ID = '00000000-0000-0000-0000-000000000000'
 
 function parseCondition(formData: FormData) {
   const value = String(formData.get('condition') ?? '')
@@ -160,7 +163,8 @@ export async function suggestListingValueAction(
   formData: FormData,
 ): Promise<SuggestValueState> {
   try {
-    await requireProfile()
+    // No auth check needed for personal use
+    // await requireProfile()
 
     const title = requireString(formData, 'title', 'Title', 3)
     const category = parseCategory(formData)
@@ -288,7 +292,8 @@ export async function createListingAction(
   formData: FormData,
 ): Promise<ActionState> {
   try {
-    const { supabase, user } = await requireProfile()
+    const supabase = createAdminClient()
+    const user = { id: ADMIN_USER_ID }
     const clientListingId = parseOptionalUuid(formData, 'client_listing_id')
     const values = parseListingInput(formData)
     const details = parseDetailFields(formData)
@@ -376,7 +381,8 @@ export async function updateListingAction(
   formData: FormData,
 ): Promise<ActionState> {
   try {
-    const { supabase, user } = await requireProfile()
+    const supabase = createAdminClient()
+    const user = { id: ADMIN_USER_ID }
     const listingId = requireString(formData, 'listing_id', 'Listing')
     const values = parseListingInput(formData)
     const details = parseDetailFields(formData)
@@ -467,7 +473,8 @@ export async function updateListingAction(
 }
 
 export async function removeListingAction(formData: FormData) {
-  const { supabase, user } = await requireProfile()
+  const supabase = createAdminClient()
+  const user = { id: ADMIN_USER_ID }
   const listingId = requireString(formData, 'listing_id', 'Listing')
 
   const { error } = await supabase

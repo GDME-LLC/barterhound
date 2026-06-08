@@ -165,18 +165,13 @@ export function ListingForm({ mode, listing, images = [] }: ListingFormProps) {
     try {
       const rows: { storage_path: string; url: string; position: number }[] = []
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        throw new Error('You must be signed in.')
-      }
+      // Use a hardcoded path prefix for the personal account
+      const myUserId = 'admin'
 
       for (const [index, file] of files.entries()) {
         const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg'
         // Storage path: <userId>/<listingId>-<timestamp>-<index>.<ext>
-        const finalStoragePath = `${user.id}/${targetListingId}-${Date.now()}-${index}.${extension}`
+        const finalStoragePath = `${myUserId}/${targetListingId}-${Date.now()}-${index}.${extension}`
 
         const { error: uploadError } = await supabase.storage
           .from('listing-images')
