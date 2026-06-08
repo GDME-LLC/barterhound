@@ -55,6 +55,7 @@ NEXT_PUBLIC_MAPBOX_TOKEN=pk.your-mapbox-token
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 GEMINI_API_KEY=your-gemini-api-key
 GEMINI_MODEL=gemini-2.0-flash
+SCRAPING_API_KEY=your-apify-or-other-api-key
 ```
 
 Supabase setup required for the full app:

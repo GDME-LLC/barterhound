@@ -179,3 +179,27 @@ export async function suggestListingValue(input: ListingValueSuggestionInput): P
 
   return { suggestion, fingerprint }
 }
+
+/**
+ * Evaluates if an external listing price represents a "good deal" (e.g., 20% below market low).
+ */
+export async function evaluateMarketDeal(
+  input: ListingValueSuggestionInput,
+  externalPriceCents: number
+): Promise<{ isDeal: boolean; savings: number; confidence: string }> {
+  const { suggestion } = await suggestListingValue(input);
+
+  if (!suggestion.estimatedLow) {
+    return { isDeal: false, savings: 0, confidence: 'low' };
+  }
+
+  const marketLowCents = suggestion.estimatedLow * 100;
+  const isDeal = externalPriceCents < marketLowCents * 0.85; // Flag if 15% below market low
+  const savings = marketLowCents - externalPriceCents;
+
+  return {
+    isDeal,
+    savings: Math.max(0, savings),
+    confidence: suggestion.confidence,
+  };
+}

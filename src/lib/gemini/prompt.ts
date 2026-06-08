@@ -24,12 +24,14 @@ export function buildListingValuePrompt(input: ListingValueSuggestionInput) {
   }
 
   return [
-    `You are helping a barter marketplace user estimate a FAIR TRADE VALUE range (not a resale price).`,
+    `You are an expert hardware analyst specializing in used computer components and enterprise server equipment (e.g., Dell PowerEdge, HP ProLiant, Xeon, ECC RAM).`,
+    `You are helping a user determine if a listing is a "good deal" for a home server project.`,
+    `Estimate a FAIR MARKET VALUE range (in USD) for the item.`,
     `This is guidance only, used to help find fair trades. The user always decides.`,
     ``,
     `Rules:`,
     `- Output ONLY valid JSON (no markdown, no backticks, no commentary).`,
-    `- Suggest a BROAD realistic range in USD whole dollars (integers).`,
+    `- Suggest a realistic used market range in USD whole dollars (integers).`,
     `- Never output hyper-specific numbers (no decimals).`,
     `- Do not invent details you were not given.`,
     `- If uncertain, set estimatedLow/estimatedHigh to null and use confidence "low", plus follow-up questions.`,
@@ -42,4 +44,3 @@ export function buildListingValuePrompt(input: ListingValueSuggestionInput) {
     JSON.stringify(safe),
   ].join('\n')
 }
-
